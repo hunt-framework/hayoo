@@ -1,3 +1,4 @@
+/hayooFrontend/cabal.sandbox.config
 dist
 cabal-dev
 *.o
