@@ -2,6 +2,8 @@
 
 module Hayoo.Server where
 
+import Data.String (fromString)
+
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 
@@ -14,6 +16,7 @@ import           Data.Aeson.Types ()
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Network.Wai.Middleware.RequestLogger as Wai
+import qualified Network.Wai.Handler.Warp as W
 
 import qualified System.Log.Logger as Log
 import qualified System.Log.Formatter as Log (simpleLogFormatter)
@@ -28,9 +31,9 @@ import Hunt.Server.Client (newServerAndManager)
 
 import Paths_hayooFrontend
 
-start :: IO ()
-start = do
-    sm <- newServerAndManager "localhost:3000"
+start :: HayooConfiguration -> IO ()
+start config = do
+    sm <- newServerAndManager $ T.pack $ huntUrl config
 
     -- Note that 'runM' is only called once, at startup.
     let runM m = runHayooReader m sm
@@ -41,7 +44,9 @@ start = do
 
     Log.debugM modName "Application start"
 
-    Scotty.scottyT 8080 runM runActionToIO $ do
+    let options = Scotty.Options {Scotty.verbose = 1, Scotty.settings = (W.defaultSettings { W.settingsPort = hayooPort config, W.settingsHost = fromString $ hayooHost config })}
+
+    Scotty.scottyOptsT options runM runActionToIO $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
         dispatcher      
 

@@ -44,4 +44,6 @@ executable hayooFrontend
                      , hunt-client
                      , lens >= 3.10
                      , mtl >= 2.1
+                     , cmdargs >= 0.10
+                     , warp >= 1.3
 
