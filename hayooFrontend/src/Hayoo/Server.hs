@@ -31,6 +31,8 @@ import Hunt.Server.Client (newServerAndManager)
 
 import Paths_hayooFrontend
 
+type HayooError = TL.Text
+
 start :: HayooConfiguration -> IO ()
 start config = do
     sm <- newServerAndManager $ T.pack $ huntUrl config
@@ -50,7 +52,7 @@ start config = do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
         dispatcher      
 
-dispatcher :: Scotty.ScottyT HayooServer ()
+dispatcher :: Scotty.ScottyT HayooError HayooServer ()
 dispatcher = do
     Scotty.get "/" $ do
         params <- Scotty.params
@@ -70,22 +72,22 @@ dispatcher = do
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
 
-renderRoot :: [Scotty.Param] -> Scotty.ActionT HayooServer ()
+renderRoot :: [Scotty.Param] -> Scotty.ActionT HayooError HayooServer ()
 renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     where 
-    renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooServer ()
+    renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
         value <- (lift $ query q) >>= raiseOnLeft
         Scotty.html $ Templates.body (TL.fromStrict q) $ Templates.renderLimitedRestults value
 
-raiseOnLeft :: Monad m => Either T.Text a -> Scotty.ActionT m a
+raiseOnLeft :: (Monad m) => Either T.Text a -> Scotty.ActionT HayooError m a
 raiseOnLeft (Left err) = Scotty.raise $ TL.fromStrict err
 raiseOnLeft (Right x) = return x
     
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".
-javascript :: T.Text -> Scotty.ActionM ()
+javascript :: (Scotty.ScottyError e, Monad m) => T.Text -> Scotty.ActionT e m ()
 javascript t = do
     Scotty.setHeader "Content-Type" "text/javascript"
     Scotty.raw $ TL.encodeUtf8 $ TL.fromStrict t

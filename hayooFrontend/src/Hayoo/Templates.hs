@@ -4,6 +4,8 @@
 
 module Hayoo.Templates where
 
+import Data.Map (Map, toList)
+
 import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 --import qualified Text.Blaze.Html as Blaze (Html)
@@ -99,10 +101,13 @@ $doctype 5
         ^{footer}
 |] render
 
+mainUri :: Map TS.Text TS.Text -> TS.Text
+mainUri m = snd $ head $ toList m
+
 renderResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
 renderResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
     <span .label .label-default>
@@ -111,7 +116,7 @@ renderResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 
 renderResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
 |]
@@ -119,13 +124,13 @@ renderResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 renderResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
     #{show $ resultType r}
-    <a href=#{resultUri r}>
+    <a href=#{mainUri $ resultUri r}>
         #{resultName r}
 |]
 
 renderResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     <span .label .label-default>
         Package
@@ -147,7 +152,7 @@ renderResult result@(PackageResult {}) = [Hamlet.hamlet|
     ^{renderResultHeading result} 
     <div .panel-body>
         <p .description .more>
-            #{resultDescription result}
+            #{resultSynopsis result}
 |]
 
 renderLimitedRestults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes

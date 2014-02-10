@@ -19,11 +19,15 @@ module Hayoo.Common
 import GHC.Generics (Generic)
 import Data.Typeable (Typeable)
 import Data.Data (Data)
+import Data.ByteString.Lazy (ByteString, fromStrict, toStrict)
+
 
 import Control.Monad (mzero)
 import Control.Monad.IO.Class (MonadIO)
 
+import Data.Map (Map, fromList)
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T (decodeUtf8)
 import Data.Aeson
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -42,7 +46,7 @@ instance FromJSON ResultType where
 
 data SearchResult =
     NonPackageResult {
-        resultUri :: Text, 
+        resultUri :: (Map Text Text), 
         resultPackage :: Text,
         resultModule :: Text,
         resultName :: Text,
@@ -52,7 +56,7 @@ data SearchResult =
         resultType :: ResultType
     }
     | PackageResult {
-        resultUri :: Text, 
+        resultUri :: (Map Text Text),  
         resultName :: Text,
         resultDependencies :: Text,
         resultMaintainer :: Text,
@@ -62,11 +66,18 @@ data SearchResult =
         resultType :: ResultType
     }  deriving (Show, Eq)
 
+parseUri :: (Monad m) => Text -> ByteString -> m (Map Text Text)
+parseUri key t = 
+    case eitherDecode t of
+        Right v -> return v
+        Left _ -> return $ fromList [(key, T.decodeUtf8 $ toStrict t)]
 
 instance FromJSON SearchResult where
     parseJSON (Object v) = do
-        u <- v .: "uri" 
+        
         (Object descr) <- v .: "desc" -- This is always succesful. (as of january 2014)
+        unparsedUri <- descr .: "uri" 
+        
         n <- descr .:? "name" .!= ""
         d <- descr .:? "description" .!= ""
         t <- descr .:? "type" .!= Unknown
@@ -77,14 +88,24 @@ instance FromJSON SearchResult where
                 s  <- descr .:? "synopsis" .!= ""
                 a  <- descr .:? "author" .!= ""
                 cat  <- descr .:? "category" .!= ""
+                u <- parseUri m unparsedUri
                 return $ PackageResult u n dep m s a cat Package
             _       -> do
-                p  <- descr .: "package"
-                m  <- descr .: "module"
-                s  <- descr .: "signature"
+                p  <- descr .:? "package" .!= "unknown"
+                m  <- descr .:? "module" .!= "Unknown"
+                s  <- descr .:? "signature" .!= ""
                 c  <- descr .:? "source" .!= ""
+                u <- parseUri p unparsedUri
                 return $ NonPackageResult u p m n s d c t
     parseJSON _ = mzero
+
+
+
+--instance FromJSON (Either Text (Map Text Text)) where
+--    parseJSON (String v) = do
+
+--    parseJSON (Object v) = do
+
 
 newtype HayooServer a = HayooServer { runHayooServer :: ReaderT H.ServerAndManager IO a }
     deriving (Monad, MonadIO, MonadReader (H.ServerAndManager))
