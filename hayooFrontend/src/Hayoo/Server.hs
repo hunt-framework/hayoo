@@ -78,8 +78,7 @@ renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
-        value <- (lift $ query q) >>= raiseOnLeft
-        Scotty.html $ Templates.body (TL.fromStrict q) $ Templates.renderLimitedRestults value
+        Scotty.html $ Templates.body (TL.fromStrict q)
 
 raiseOnLeft :: (Monad m) => Either T.Text a -> Scotty.ActionT HayooError m a
 raiseOnLeft (Left err) = Scotty.raise $ TL.fromStrict err
