@@ -8,10 +8,11 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+-- import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import           Data.Aeson.Types ()
+import           Data.String.Conversions (cs) -- , (<>))
 
 import qualified Web.Scotty.Trans as Scotty
 
@@ -78,7 +79,7 @@ renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
-        Scotty.html $ Templates.body (TL.fromStrict q)
+        Scotty.html $ Templates.body (cs q) Templates.mainPage
 
 raiseOnLeft :: (Monad m) => Either T.Text a -> Scotty.ActionT HayooError m a
 raiseOnLeft (Left err) = Scotty.raise $ TL.fromStrict err

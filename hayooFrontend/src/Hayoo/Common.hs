@@ -19,15 +19,15 @@ module Hayoo.Common
 import GHC.Generics (Generic)
 import Data.Typeable (Typeable)
 import Data.Data (Data)
-import Data.ByteString.Lazy (ByteString, fromStrict, toStrict)
-
+import Data.ByteString.Lazy (ByteString)
+import           Data.String.Conversions (cs) -- , (<>))
 
 import Control.Monad (mzero)
 import Control.Monad.IO.Class (MonadIO)
 
 import Data.Map (Map, fromList)
 import Data.Text (Text)
-import qualified Data.Text.Encoding as T (decodeUtf8)
+--import qualified Data.Text.Encoding as T (decodeUtf8)
 import Data.Aeson
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -70,7 +70,7 @@ parseUri :: (Monad m) => Text -> ByteString -> m (Map Text Text)
 parseUri key t = 
     case eitherDecode t of
         Right v -> return v
-        Left _ -> return $ fromList [(key, T.decodeUtf8 $ toStrict t)]
+        Left _ -> return $ fromList [(key, cs t)]
 
 instance FromJSON SearchResult where
     parseJSON (Object v) = do
@@ -116,7 +116,7 @@ hayooServer = lift
 runHayooReader :: HayooServer a -> H.ServerAndManager -> IO a
 runHayooReader = runReaderT . runHayooServer
 
-withServerAndManager' :: H.HolumbusConnectionT IO b -> HayooServer b
+withServerAndManager' :: H.HuntConnectionT IO b -> HayooServer b
 withServerAndManager' x = do
     sm <- ask
     --sm <- liftIO $ STM.readTVarIO var

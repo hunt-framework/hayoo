@@ -1,90 +1,72 @@
 module Hayoo.ParseSignature where
 
-import Text.ParserCombinators.Parsec
+import Text.Parsec
 import Data.List
 
+import Control.Monad.Identity
+import Control.Applicative    ((*>), (<*), (<$>))
 
 data Signature = 
-      Identifier { getIdentifier :: String }
-    | ComplexIdentifier { getPrefix :: String, getPostfix :: Signature }
+      Symbol { getSymbol :: String }
+    | TypeApp { getPrefix :: String, getPostfix :: Signature }
     | Tuple { getElements :: [Signature] }
     | Function { getParameter :: Signature, getResult :: Signature }
     deriving (Eq)
 
 
 instance Show Signature where
-    show (Identifier i) = i
-    show (ComplexIdentifier "[]" c) = "[" ++ (show c) ++ "]"
-    show (ComplexIdentifier p c@(Tuple _)) = p ++ " " ++ (show c)
-    show (ComplexIdentifier p c) = p ++ " (" ++ (show c) ++ ")"
-    show (Tuple c) = "(" ++ (intercalate "," $ map show c) ++ ")"
-    show (Function p r) = "(" ++ (show p) ++ "->" ++ (show r) ++ ")"
+    show (Symbol i) = i
+    show (TypeApp "[]" c)          = "[" ++ (show c) ++ "]"
+    show (TypeApp p c@(Symbol {})) = p ++ " " ++ (show c)
+    show (TypeApp p c@(Tuple {}))  = p ++ " " ++ (show c)
+    show (TypeApp p c)             = p ++ " (" ++ (show c) ++ ")"
+    show (Tuple c)                 = "(" ++ (intercalate "," $ map show c) ++ ")"
+    show (Function p@Function{} r) = "(" ++ (show p) ++ ")->" ++ (show r)
+    show (Function p r)            = (show p) ++ "->" ++ (show r)
 
-haskellIdentifier :: GenParser Char st String
-haskellIdentifier = many1 $ (alphaNum <|> char '.')
 
-identifier :: GenParser Char st Signature
-identifier = fmap Identifier haskellIdentifier
+type StringParsec u r =  ParsecT String u Identity r
 
-complexIdentifier :: GenParser Char st Signature
-complexIdentifier = do
-    prefix <- haskellIdentifier
-    many1 space
-    postfix <- signature
-    return $ ComplexIdentifier prefix postfix
+symbol :: StringParsec u String
+symbol = (many1 $ (alphaNum <|> char '.')) <* spaces
 
-signatureInParenthesis :: GenParser Char st Signature
-signatureInParenthesis = do
-    char '(' 
-    spaces
-    content <- signature
-    spaces
-    char ')'
-    return $ content
+-- spaces = many space
 
-list :: GenParser Char st Signature
-list = do
-    char '[' 
-    spaces
-    content <- signature
-    spaces
-    char ']'
-    return $ ComplexIdentifier "[]" content
+typeBranch :: StringParsec u Signature
+typeBranch = tuple <|> list <|> typeApplication
 
-tuple :: GenParser Char st Signature
+typeApplication :: StringParsec u Signature
+typeApplication = do
+    prefix <- symbol
+    ((TypeApp prefix) <$> typeBranch) <|> return (Symbol prefix)
+
+expr :: StringParsec u Signature
+expr = do
+    btype <- typeBranch
+    (Function btype <$> (string "->" *> spaces *> expr) ) <|> return btype
+
+list :: StringParsec u Signature
+list = TypeApp "[]" <$> braces expr
+
+tuple :: StringParsec u Signature
 tuple = do
-    char '(' 
-    spaces
-    c <- sepBy signature $ (spaces >> char ',' >> spaces)
-    spaces
-    char ')'
-    return $ Tuple c
+    elems <- (parens $ sepBy expr $ (char ',' *> spaces))
+    case elems of
+        [] -> return $ Symbol "()"
+        [e] -> return e
+        _ -> return $ Tuple elems
 
+braces ::  StringParsec u Signature -> StringParsec u Signature
+braces sub = (char '[' *> spaces) *> sub <* (char ']' *> spaces)
 
-function :: GenParser Char st Signature
-function = do
-    param <- (try signatureInParenthesis) <|> tuple <|> list <|> (try complexIdentifier) <|> identifier
-    spaces
-    string "->"
-    spaces
-    result <- signature
-    return $ Function param result
+parens sub = (char '(' *> spaces) *> sub <* (char ')' *> spaces)
 
-signature :: GenParser Char st Signature
-signature = do
-    c <- (try function) <|> (try signatureInParenthesis) <|> tuple <|> list <|> (try complexIdentifier) <|> identifier
-    return c
+withEof :: StringParsec u Signature -> StringParsec u Signature
+withEof content = content <* eof
 
+parseUnknown :: StringParsec () Signature -> String -> Either ParseError Signature
+parseUnknown e = parse (withEof e) "(unknown)"
 
-withEof :: (GenParser Char st Signature) -> GenParser Char st Signature
-withEof content = do
-    c <- content
-    eof
-    return c
+parseSignature :: [Char] -> Either ParseError Signature
+parseSignature = parseUnknown expr
 
--- sinleElement = 
-
--- element = elementInParanthesis <|> 
-
-
--- elements = sepBy element (string "->")
