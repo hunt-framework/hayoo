@@ -1,18 +1,30 @@
+{-# LANGUAGE DeriveFunctor, DeriveTraversable, DeriveFoldable #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverlappingInstances, IncoherentInstances #-} 
+-- {-# LANGUAGE FlexibleContexts #-}
+
 module Hayoo.ParseSignature where
 
-import Text.Parsec
+import Prelude hiding (mapM, sequence)
+
+import Data.Char
+import Text.Parsec (many1, parse, spaces, (<|>), char, alphaNum, string, sepBy, ParsecT, eof, ParseError)
 import Data.List
 
-import Control.Monad.Identity
+import Control.Monad.Identity (Identity)
+import Control.Monad.State (MonadState, State, runState, get, put)
 import Control.Applicative    ((*>), (<*), (<$>))
+-- import Data.Functor (Functor)
+import Data.Foldable (Foldable, fold)
+import Data.Traversable (Traversable, mapM, traverse, sequence)
 
-data Signature = 
-      Symbol { getSymbol :: String }
-    | TypeApp { getPrefix :: String, getPostfix :: Signature }
-    | Tuple { getElements :: [Signature] }
-    | Function { getParameter :: Signature, getResult :: Signature }
-    deriving (Eq)
+data SignatureT a = 
+      Symbol { getSymbol :: a }
+    | TypeApp { getPrefix :: a , getPostfix :: SignatureT a }
+    | Tuple { getElements :: [SignatureT a] }
+    | Function { getParameter :: SignatureT a, getResult :: SignatureT a }
+    deriving (Eq, Show, Functor, Foldable, Traversable)
 
+type Signature = SignatureT String
 
 instance Show Signature where
     show (Symbol i) = i
@@ -69,4 +81,47 @@ parseUnknown e = parse (withEof e) "(unknown)"
 
 parseSignature :: [Char] -> Either ParseError Signature
 parseSignature = parseUnknown expr
+
+-- ----------------------
+
+children :: Signature -> [Signature]
+children = nub . children'
+    where
+    children' :: Signature -> [Signature]
+    children' Symbol{} = []
+    children' TypeApp {getPostfix = p} = [p]
+    children' (Tuple e) = e ++ (concatMap children e)
+    children' (Function param result) = param : result : children result
+
+
+nextKey :: [(String, String)] -> String
+nextKey [] = "a"
+nextKey ((_,k):_) = nextKey' k
+    where
+    nextKey' :: String -> String
+    nextKey' k = head $ tail $ dropWhile (/= k) $ (map return ['a'..'z']) ++ [x:y:[] | x <- ['a'..'z'], y <- ['a'..'z']]
+
+normalizeSignature :: Signature -> (Signature, [(String, String)])
+normalizeSignature sig = runState (mapM norm sig) []
+    where
+    norm :: String -> State [(String, String)] String
+    norm sym 
+        | isUpper $ head sym = return sym
+        | otherwise = do
+            st <- get
+            case lookup sym st of
+                (Just s) -> return s
+                Nothing -> do
+                    let s = nextKey st
+                    put $ (sym, s):st
+                    return s
+
+
+
+parents :: Signature -> Signature
+parents s@Symbol{} = s
+parents (TypeApp _  s@Symbol{}) = s
+parents (TypeApp pre post)       = TypeApp pre $ parents post
+parents (Tuple e) = Tuple $ map parents e
+parents (Function param result) = Function (parents param) (parents result)
 
