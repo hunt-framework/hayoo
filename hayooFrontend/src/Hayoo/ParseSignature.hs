@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveFunctor, DeriveTraversable, DeriveFoldable #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverlappingInstances, IncoherentInstances #-} 
--- {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Hayoo.ParseSignature where
 
 import Prelude hiding (mapM, sequence)
 
 import Data.Char
+import Data.String (IsString, fromString)
 import Text.Parsec (many1, parse, spaces, (<|>), char, alphaNum, string, sepBy, ParsecT, eof, ParseError)
 import Data.List
 
@@ -82,6 +83,9 @@ parseUnknown e = parse (withEof e) "(unknown)"
 parseSignature :: [Char] -> Either ParseError Signature
 parseSignature = parseUnknown expr
 
+
+instance IsString Signature where 
+    fromString s = either (error . show) id $ parseSignature s
 -- ----------------------
 
 children :: Signature -> [Signature]
@@ -107,6 +111,7 @@ normalizeSignature sig = runState (mapM norm sig) []
     norm :: String -> State [(String, String)] String
     norm sym 
         | isUpper $ head sym = return sym
+        | sym == "[]" = return sym
         | otherwise = do
             st <- get
             case lookup sym st of
@@ -125,3 +130,19 @@ parents (TypeApp pre post)       = TypeApp pre $ parents post
 parents (Tuple e) = Tuple $ map parents e
 parents (Function param result) = Function (parents param) (parents result)
 
+
+countComplex :: Signature -> Int
+countComplex Symbol{} = 0
+countComplex (TypeApp _ post)       = 1 + countComplex post
+countComplex (Tuple e) = 1 +  (sum $ map countComplex e)
+countComplex (Function param result) = 1 + countComplex param + countComplex result
+
+isCompex :: Signature -> Bool
+isCompex f@Function{} = countComplex f >= 3
+isCompex _ = False
+
+expand :: Signature -> [Signature]
+expand s = s : (filter isCompex $ parents s : (parents $ parents s): children s)
+
+expandNormalized :: Signature -> [Signature]
+expandNormalized = map (fst . normalizeSignature) . expand
