@@ -26,7 +26,7 @@ import Control.Monad (mzero)
 import Control.Monad.IO.Class (MonadIO)
 
 import Data.Map (Map, fromList)
-import Data.Text (Text)
+import Data.Text (Text, isInfixOf)
 --import qualified Data.Text.Encoding as T (decodeUtf8)
 import Data.Aeson
 
@@ -35,6 +35,7 @@ import Control.Monad.Trans.Class (MonadTrans, lift)
 import "mtl" Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT)
 
 import qualified Hunt.Server.Client as H
+import Hayoo.ParseSignature
 
 data ResultType = Class | Data | Function | Method | Module | Newtype | Package | Type | Unknown
     deriving (Eq, Show, Generic)
@@ -122,11 +123,22 @@ withServerAndManager' x = do
     --sm <- liftIO $ STM.readTVarIO var
     liftIO $ H.withServerAndManager x sm
 
+handleSignatureQuery :: Monad m => Text -> m Text
+handleSignatureQuery q
+    | "->" `isInfixOf` q = sig
+    | otherwise = return q
+    where
+        sig = either (fail . show) (return . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
+
 autocomplete :: Text -> HayooServer (Either Text [Text])
-autocomplete q = withServerAndManager' $ H.autocomplete q
+autocomplete q = do
+    q' <- handleSignatureQuery q
+    withServerAndManager' $ (H.autocomplete) q'
 
 query :: Text -> HayooServer (Either Text (H.LimitedResult SearchResult))
-query q = withServerAndManager' $ H.query q
+query q = do
+    q' <- handleSignatureQuery q
+    withServerAndManager' $ H.query q'
 
 data HayooConfiguration = HayooConfiguration {
     hayooHost :: String, 
