@@ -32,34 +32,26 @@ parsers :: [(Signature, String)]
 parsers = 
     [
          (Symbol "a",                                       "a")
-       , (TypeApp "a" $ Symbol "b",                         "a b")
-       , (TypeApp "[]" $ Symbol "a",                        "[a]")
-       , (Function (Symbol "a") (Symbol "b"),               "a -> b")
+       , (TypeApp "a" [Symbol "b"],                         "a b")
+       , (TypeApp "[]" [Symbol "a"],                        "[a]")
+       , ((Symbol "a") `Function` (Symbol "b"),             "a -> b")
        , (Symbol "()",                                      "()")
        , (Symbol "a",                                       "(a)")
        , (Tuple [Symbol "a", Symbol "b"],                   "(a,b)")
        , (Tuple [Symbol "a", Symbol "b"],                   "( a , b )")
-       , (Function (Symbol "a") (TypeApp "b" $ Symbol "c"), "a -> b c")
-       , (Function (TypeApp "a" $ Symbol "b") (Symbol "c"), "a b -> c")
-       , (Function (Symbol "a") (Function (Symbol "b") (Symbol "c")), "a -> b -> c")
-       , (Function (Function (Symbol "a") (Symbol "b")) (Symbol "c"), "(a -> b) -> c")
+       , ((Symbol "a") `Function` (TypeApp "b" [Symbol "c"]), "a -> b c")
+       , ((TypeApp "a" [Symbol "b"]) `Function` (Symbol "c"), "a b -> c")
+       , ( (Symbol "a") `Function` ((Symbol "b")  `Function` (Symbol "c")), "a -> b -> c")
+       , (((Symbol "a") `Function`  (Symbol "b")) `Function` (Symbol "c"), "(a -> b) -> c")
+       , (TypeApp "a" [(Symbol "b"), (Symbol "c")],         "a b c")
+       , (TypeApp "a" [(Symbol "b"), (Symbol "c")] `Function` (Symbol "d"),         "a b c -> d")
+       , (TypeApp "[]" [TypeApp "a" [(Symbol "b"), (Symbol "c")]],         "[a b c]")
     ]
 
 simpleTests :: [Test.Framework.Test]
 simpleTests = map toTest $ parsers
     where
         toTest (sig, text) = testCase ("Test: " ++ text) $ sig @=? eqParse text
-
---test_parse_1 :: Assertion
---test_parse_1 = assertEqual "foo" "a" $ eqParse "a"
-
---test_parse_2 = assertEqual "foo" "a b" $ eqParse "a b"
-
---test_parse_3 = assertEqual "foo" "[a]" $ eqParse "[a]"
-
---test_parse_4 = assertEqual "foo" "a -> b" $ eqParse "a -> b"
-
---test_parse_ = assertEqual "foo" "a -> b" $ eqParse "a -> b"
 
 eqParse :: String -> Signature
 eqParse s = case parseSignature s of 
