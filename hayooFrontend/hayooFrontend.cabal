@@ -29,8 +29,10 @@ executable hayooFrontend
 
   other-modules:     Hayoo.Common
     
+    -- remove attoparsec, when bumpine aeson to 0.7 !!!
   build-depends:     base             == 4.6.*
                      , aeson          >= 0.6
+                     , attoparsec     >= 0.10
                      , blaze-html     >= 0.6   && < 0.8
                      , bytestring     >= 0.10
                      , cmdargs        >= 0.10
@@ -42,11 +44,13 @@ executable hayooFrontend
                      , lens           >= 3.10
                      , mtl            >= 2.1
                      , parsec         >= 3.1
+                     , scientific     >= 0.2
                      , scotty         >= 0.6   && < 0.7
                      , shakespeare-js >= 1.2
                      , string-conversions     >= 0.3.0.2
                      , text           >= 1     && < 2
                      , transformers   >= 0.3
+                     , vector         >= 0.10
                      , wai-extra      >= 2.0   && < 2.1
                      , warp           >= 2.0   && < 2.1
 

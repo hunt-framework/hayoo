@@ -66,7 +66,7 @@ dispatcher = do
         Scotty.setHeader "Content-Type" "text/css"
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
-    Scotty.get "/autocomplete"$ do
+    Scotty.get "/autocomplete" $ do
         q <- Scotty.param "term"
         value <- (lift $ autocomplete $ TL.toStrict q) >>= raiseOnLeft
         Scotty.json $ value
@@ -79,10 +79,13 @@ renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
-        Scotty.html $ Templates.body (cs q) Templates.mainPage
+        value <- (lift $ query q) >>= raiseOnLeft
+        Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults value
 
-raiseOnLeft :: (Monad m) => Either T.Text a -> Scotty.ActionT HayooError m a
-raiseOnLeft (Left err) = Scotty.raise $ TL.fromStrict err
+raiseOnLeft :: Either T.Text a -> Scotty.ActionT HayooError HayooServer a
+raiseOnLeft (Left err) = do
+    liftIO $ Log.criticalM modName $ show err
+    Scotty.raise $ TL.fromStrict err
 raiseOnLeft (Right x) = return x
     
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
