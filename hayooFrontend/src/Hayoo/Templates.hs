@@ -118,7 +118,7 @@ renderResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 <div .panel-heading>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
-        :: #{resultSignature r}
+    :: #{resultSignature r}
 |]
 
 renderResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
@@ -190,7 +190,7 @@ examples = [Hamlet.hamlet|
 <div .panel .panel-default>
     <div .panel-heading>
         <h3 .panel-title>
-            If you don't find what you searched for by just searching for the name, you can try to search for specific properties by perfixing them
+            If you don't find what you searched for by just searching for the name, you can try to search for specific properties by prefixing them
     <div .panel-body>
         <p>
             <a href="@{Home}?query=name%3AmapM">name:mapM
@@ -199,7 +199,7 @@ examples = [Hamlet.hamlet|
             <a href="@{Home}?query=package%3Abase">package:base
             searches for the base package.
         <p>
-            <a href="@{Home}?query=signature%3Aa%20-%3E%20a">signature:a -&gt; a
+            <a href="@{Home}?query=a%20-%3E%20a">a -&gt; a
             searches for all functions with this signature in all packages.
         <p>
             <a href="@{Home}?query=module%3AControl.Exception">module:Control.Exception
