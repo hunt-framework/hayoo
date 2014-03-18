@@ -12,6 +12,7 @@ module Hayoo.ParseSignature
 , normalizeSignature
 , expand
 , expandNormalized
+, modifySignatureWith
 ) where
 
 import Prelude hiding (mapM, sequence)
@@ -85,7 +86,7 @@ withEof content = content <* eof
 parseUnknown :: StringParsec Signature -> String -> Either ParseError Signature
 parseUnknown e = parse (withEof e) "(unknown)"
 
-parseSignature :: [Char] -> Either ParseError Signature
+parseSignature :: String -> Either ParseError Signature
 parseSignature = parseUnknown expr
 
 
@@ -172,10 +173,13 @@ isCompex f@Function{}                = countComplex f >= 3
 isCompex _                           = False
 
 expand :: Signature -> [Signature]
-expand s = s : (filter isCompex $ parents s : (parents $ parents s): children s)
+expand s = nub $ s : (filter isCompex $ parents s : (parents $ parents s): children s)
 
 expandNormalized :: Signature -> [Signature]
 expandNormalized = map (fst . normalizeSignature) . expand
 
---(<$$>) :: (Functor f, Functor f1) => (a -> b) -> f (f1 a) -> f (f1 b)
---(<$$>) f x = (fmap.fmap) f x
+modifySignatureWith :: (Signature -> [Signature]) -> String -> String 
+modifySignatureWith func sig = either (const sig) (intercalate "$") $ pretty <$$> (func <$> parseSignature sig)
+
+(<$$>) :: (Functor f, Functor f1) => (a -> b) -> f (f1 a) -> f (f1 b)
+(<$$>) f x = (fmap.fmap) f x
