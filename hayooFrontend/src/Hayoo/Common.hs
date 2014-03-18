@@ -18,33 +18,34 @@ module Hayoo.Common
 , HayooConfiguration (..)
 ) where
 
-import GHC.Generics (Generic)
-import Data.Typeable (Typeable)
-import Data.Data (Data)
-import Data.ByteString.Lazy (ByteString)
-import           Data.String.Conversions (cs) -- , (<>))
+import           GHC.Generics (Generic)
 
-import Control.Monad (mzero)
-import Control.Monad.IO.Class (MonadIO)
+-- import           Control.Monad (mzero)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Trans.Class (MonadTrans, lift)
+import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT)
 
-import Data.Map (Map, fromList)
-import Data.Text (Text, isInfixOf)
---import qualified Data.Text.Encoding as T (decodeUtf8)
-import Data.Aeson
-import Data.Vector (Vector, (!))
+import           Data.Aeson
+import           Data.ByteString.Lazy (ByteString)
+import           Data.Data (Data)
+import           Data.Map (Map, fromList)
+import           Data.String.Conversions (cs, (<>))
+import           Data.Text (Text, isInfixOf)
+import           Data.Typeable (Typeable)
+import           Data.Vector ((!))
 
 #if MIN_VERSION_aeson(0,7,0)
-import Data.Scientific (Scientific)
+import           Data.Scientific (Scientific)
 #else
-import Data.Attoparsec.Number (Number(D))
+import           Data.Attoparsec.Number (Number (D))
 #endif
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Class (MonadTrans, lift)
-import "mtl" Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT)
+import qualified System.Log.Logger as Log (debugM)
 
 import qualified Hunt.Server.Client as H
-import Hayoo.ParseSignature
+import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
+
+import           Hayoo.ParseSignature
 
 data ResultType = Class | Data | Function | Method | Module | Newtype | Package | Type | Unknown
     deriving (Eq, Show, Generic)
@@ -163,25 +164,40 @@ withServerAndManager' x = do
     --sm <- liftIO $ STM.readTVarIO var
     liftIO $ H.withServerAndManager x sm
 
-handleSignatureQuery :: Monad m => Text -> m Text
+-- ------------------------
+
+-- TODO Error handling
+handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m (Either Text Query)
 handleSignatureQuery q
-    | "->" `isInfixOf` q = sig
-    | otherwise = return q
+    | "->" `isInfixOf` q = do
+        s <- sig
+        liftIO $ Log.debugM modName ("Signature Query: " <> (cs q) <> " >>>>>> " <> (show s))
+        return $ Right s
+    | otherwise = return $ Left q
     where
-        sig = either (fail . show) (return . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
+        -- sig = either (fail . show) (return . (<> "\"") . ("signature:\"" <>) . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
+        sig = either (fail . show) return $ do
+            s <- parseSignature $ cs q
+            let q1 = QContext ["signature"] $ QPhrase QCase (cs $ prettySignature s)
+                q2 = QContext ["normalized"] $ QPhrase QCase (cs $ prettySignature $ fst $ normalizeSignature s)
+                sigQ = QBinary Or q1 q2
+            return sigQ
 
 autocomplete :: Text -> HayooServer (Either Text [Text])
 autocomplete q = do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ (H.autocomplete) q'
+    withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
 
 query :: Text -> HayooServer (Either Text (H.LimitedResult SearchResult))
 query q = do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ H.query q'
+    withServerAndManager' $ either H.query H.evalQuery $ q'
 
 data HayooConfiguration = HayooConfiguration {
     hayooHost :: String, 
     hayooPort :: Int, 
     huntUrl :: String
 } deriving (Show, Data, Typeable)
+
+modName :: String
+modName = "HayooFrontend"

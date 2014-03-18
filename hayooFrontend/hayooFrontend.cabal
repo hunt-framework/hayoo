@@ -41,6 +41,7 @@ executable hayooFrontend
                      , hayooLib
                      , http-conduit   >= 2.0.0
                      , hunt-client
+                     , hunt-searchengine
                      , hslogger       >= 1.2   && < 1.3
                      , lens           >= 3.10
                      , mtl            >= 2.1
