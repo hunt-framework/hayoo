@@ -46,6 +46,7 @@ parsers =
        , (TypeApp "a" [(Symbol "b"), (Symbol "c")],         "a b c")
        , (TypeApp "a" [(Symbol "b"), (Symbol "c")] `Function` (Symbol "d"),         "a b c -> d")
        , (TypeApp "[]" [TypeApp "a" [(Symbol "b"), (Symbol "c")]],         "[a b c]")
+       , (TypeApp "f" [(Symbol "a")],                       "f(a)")
     ]
 
 simpleTests :: [Test.Framework.Test]

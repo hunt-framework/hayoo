@@ -178,8 +178,8 @@ handleSignatureQuery q
         -- sig = either (fail . show) (return . (<> "\"") . ("signature:\"" <>) . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
         sig = either (fail . show) return $ do
             s <- parseSignature $ cs q
-            let q1 = QContext ["signature"] $ QPhrase QCase (cs $ prettySignature s)
-                q2 = QContext ["normalized"] $ QPhrase QCase (cs $ prettySignature $ fst $ normalizeSignature s)
+            let q1 = QContext ["signature"] $ QWord QCase (cs $ prettySignature s)
+                q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
                 sigQ = QBinary Or q1 q2
             return sigQ
 
