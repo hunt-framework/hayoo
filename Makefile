@@ -1,5 +1,7 @@
 
-
+# disable prarallel builds.
+.NOTPARALLEL:
+	
 SERVER  = http://localhost:3000
 
 json:
@@ -17,7 +19,13 @@ binary-package:
 	cd ../hunt/hunt-server && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo) 
 	tar --transform 's,^tmp/hayoo/,,S' -czf hayoo.tar.gz /tmp/hayoo/
 
-.PHONY: all clean json sandbox binary-package
+install:
+	cd hayooLib       && cabal install
+	cd hayooFrontend  && cabal install
+
+first-install: sandbox install
+
+.PHONY: all clean json sandbox binary-package install
 
 all: 
 
