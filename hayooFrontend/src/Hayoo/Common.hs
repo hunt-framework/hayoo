@@ -1,16 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE PackageImports #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+
 
 module Hayoo.Common 
 (
   ResultType (..)
 , SearchResult (..)
-, HayooServer (..)
-, hayooServer
+, HayooServerT (..)
+, HayooServer
+, HayooActionT (..)
+, HayooAction
+-- , hayooServer
 , runHayooReader
 , runHayooReader'
 , autocomplete
@@ -20,10 +27,14 @@ module Hayoo.Common
 
 import           GHC.Generics (Generic)
 
+
+import           Control.Exception (Exception)
+import           Control.Failure (Failure, failure)
+
 -- import           Control.Monad (mzero)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
-import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT)
+import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT,)
 
 import           Data.Aeson
 import           Data.ByteString.Lazy (ByteString)
@@ -41,6 +52,10 @@ import           Data.Attoparsec.Number (Number (D))
 #endif
 
 import qualified System.Log.Logger as Log (debugM)
+
+import           Text.Parsec (ParseError)
+
+import qualified Web.Scotty.Trans as Scotty
 
 import qualified Hunt.Server.Client as H
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
@@ -123,7 +138,7 @@ parseSearchResult rank (Object v) = do
     case t of
         Package -> parsePackageResult rank descr baseUri n
         _       -> parseNonPackageResult rank descr baseUri n d t
-
+parseSearchResult rank _ = fail "parseSearchResult: expected Object"
 
 instance FromJSON SearchResult where
     parseJSON (Array v) = do
@@ -134,7 +149,7 @@ instance FromJSON SearchResult where
 #endif
             o = v ! 0
         parseSearchResult rank o
-    parseJSON _ = fail "Expected Tuple (Array) for SearchResult"
+    parseJSON _ = fail "FromJSON SearchResult: Expected Tuple (Array) for SearchResult"
 
 
 
@@ -143,52 +158,75 @@ instance FromJSON SearchResult where
 
 --    parseJSON (Object v) = do
 
+data HayooException = 
+      ParseError ParseError
+    | StringError Text  
+    deriving (Show, Typeable)
 
-newtype HayooServer a = HayooServer { runHayooServer :: ReaderT H.ServerAndManager IO a }
-    deriving (Monad, MonadIO, MonadReader (H.ServerAndManager))
+instance Exception HayooException
 
-hayooServer :: MonadTrans t => HayooServer a -> t HayooServer a
-hayooServer = lift 
+instance Scotty.ScottyError HayooException where
+    stringError s = StringError $ cs s
 
-runHayooReader :: HayooServer a -> H.ServerAndManager -> IO a
-runHayooReader = runReaderT . runHayooServer
+    showError e = cs $ show e
 
-runHayooReader' :: HayooServer a -> Text -> IO a
+newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAndManager m a }
+    deriving (Monad, MonadIO, MonadReader (H.ServerAndManager))    
+
+type HayooServer = HayooServerT IO
+
+instance MonadTrans HayooServerT where
+    lift = HayooServerT . lift
+
+newtype HayooActionT m a = HayooActionT { runHayooActionT :: Scotty.ActionT HayooException (HayooServerT m) a }
+    deriving (Monad, MonadIO)
+
+type HayooAction = HayooActionT IO
+
+--hayooServer :: MonadTrans t => HayooServerT m a -> t HayooServerT m a
+--hayooServer = lift 
+
+runHayooReader :: HayooServerT m a -> H.ServerAndManager -> m a
+runHayooReader = runReaderT . runHayooServerT
+
+runHayooReader' :: (MonadIO m) => HayooServerT m a -> Text -> m a
 runHayooReader' x s = do
-    sm <- H.newServerAndManager s
+    sm <- liftIO $ H.newServerAndManager s
     runHayooReader x sm
 
-withServerAndManager' :: H.HuntConnectionT IO b -> HayooServer b
+withServerAndManager' :: (MonadIO m) => H.HuntConnectionT IO b -> HayooServerT m b
 withServerAndManager' x = do
     sm <- ask
     --sm <- liftIO $ STM.readTVarIO var
     liftIO $ H.withServerAndManager x sm
 
+
 -- ------------------------
 
 -- TODO Error handling
-handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m (Either Text Query)
+handleSignatureQuery :: (Monad m, MonadIO m, Failure HayooException m) => Text -> m (Either Text Query)
 handleSignatureQuery q
     | "->" `isInfixOf` q = do
         s <- sig
         liftIO $ Log.debugM modName ("Signature Query: " <> (cs q) <> " >>>>>> " <> (show s))
         return $ Right s
     | otherwise = return $ Left q
-    where
+        where
         -- sig = either (fail . show) (return . (<> "\"") . ("signature:\"" <>) . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
-        sig = either (fail . show) return $ do
-            s <- parseSignature $ cs q
-            let q1 = QContext ["signature"] $ QWord QCase (cs $ prettySignature s)
-                q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
-                sigQ = QBinary Or q1 q2
-            return sigQ
+        sig = case parseSignature $ cs q of
+            (Right s) -> return sigQ
+                where
+                    q1 = QContext ["signature"] $ QWord QCase (cs $ prettySignature s)
+                    q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
+                    sigQ = QBinary Or q1 q2
+            (Left err) -> failure $ ParseError err
 
-autocomplete :: Text -> HayooServer (Either Text [Text])
+autocomplete :: (Monad m, MonadIO m, Failure HayooException m) => Text -> HayooServerT m [Text]
 autocomplete q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
 
-query :: Text -> HayooServer (Either Text (H.LimitedResult SearchResult))
+query :: (Monad m, MonadIO m, Failure HayooException m) => Text -> HayooServerT m (H.LimitedResult SearchResult)
 query q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.query H.evalQuery $ q'

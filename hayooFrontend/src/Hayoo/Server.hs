@@ -68,7 +68,7 @@ dispatcher = do
         Scotty.file cssPath
     Scotty.get "/autocomplete" $ do
         q <- Scotty.param "term"
-        value <- (lift $ autocomplete $ TL.toStrict q) >>= raiseOnLeft
+        value <- (lift $ autocomplete $ TL.toStrict q) -- >>= raiseOnLeft
         Scotty.json $ value
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
@@ -79,7 +79,7 @@ renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
-        value <- (lift $ query q) >>= raiseOnLeft
+        value <- (lift $ query q) -- >>= raiseOnLeft
         Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults value
 
 raiseOnLeft :: Either T.Text a -> Scotty.ActionT HayooError HayooServer a
