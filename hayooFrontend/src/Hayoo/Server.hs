@@ -39,7 +39,7 @@ start config = do
     sm <- newServerAndManager $ T.pack $ huntUrl config
 
     -- Note that 'runM' is only called once, at startup.
-    let runM m = runHayooReader m sm
+    let runM m = runHayooReaderInIO m sm
         -- 'runActionToIO' is called once per action.
         runActionToIO = runM
 
@@ -79,15 +79,9 @@ renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
-        value <- (lift $ query q) -- >>= raiseOnLeft
+        value <- raiseExeptions $ query q
         Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults value
-
-raiseOnLeft :: Either T.Text a -> Scotty.ActionT HayooError HayooServer a
-raiseOnLeft (Left err) = do
-    liftIO $ Log.criticalM modName $ show err
-    Scotty.raise $ TL.fromStrict err
-raiseOnLeft (Right x) = return x
-    
+            
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".
 javascript :: (Scotty.ScottyError e, Monad m) => T.Text -> Scotty.ActionT e m ()
