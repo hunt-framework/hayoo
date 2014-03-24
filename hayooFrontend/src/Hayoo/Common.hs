@@ -8,6 +8,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 
 
 
@@ -19,6 +21,7 @@ module Hayoo.Common
 , SearchResult (..)
 , HayooServerT (..)
 , HayooServer
+, HayooException
 -- , hayooServer
 , runHayooReader
 , runHayooReader'
@@ -29,10 +32,12 @@ module Hayoo.Common
 , HayooConfiguration (..)
 ) where
 
+import           Prelude hiding (catch)
 import           GHC.Generics (Generic)
 
 import           Control.Applicative (Applicative)
 import           Control.Exception (Exception, throwIO)
+import           Control.Exception.Lifted (catch, catches, Handler (..))
 import           Control.Failure (Failure, failure)
 
 import           Control.Monad (liftM)
@@ -164,31 +169,22 @@ instance FromJSON SearchResult where
 
 data HayooException = 
       ParseError ParseError
-    | StringError Text  
+    | HuntClientException H.HuntClientException
+    | HttpException HttpException
+    | StringException Text  
     deriving (Show, Typeable)
 
 instance Exception HayooException
 
 instance Scotty.ScottyError HayooException where
-    stringError s = StringError $ cs s
+    stringError s = StringException $ cs s
 
     showError e = cs $ show e
-
-newtype HayooIO a = HayooIO { unHayooIO :: IO a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadBase IO)
-
-instance MonadBaseControl (IO) (HayooIO) where
-    newtype StM (HayooIO) a = StHayooIO a
-    liftBaseWith f = HayooIO $ f (myLiftF)
-        where
-            myLiftF :: HayooIO a -> IO (StM HayooIO a)
-            myLiftF x = fmap StHayooIO $ unHayooIO x
-    restoreM (StHayooIO x) = return x
 
 newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAndManager m a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadReader (H.ServerAndManager), MonadTrans)
 
-type HayooServer = HayooServerT HayooIO
+type HayooServer = HayooServerT IO
 
 -- from http://hackage.haskell.org/package/transformers-base-0.4.1/docs/src/Control-Monad-Base.html
 instance (MonadBase b m) => MonadBase b (HayooServerT m) where
@@ -202,15 +198,15 @@ instance MonadTransControl (HayooServerT) where
 
 -- From http://hackage.haskell.org/package/monad-control-0.3.2.3/docs/src/Control-Monad-Trans-Control.html
 instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where 
-    newtype StM (HayooServerT m) a = StMReader {unStMReader :: ComposeSt (HayooServerT) m a}
-    liftBaseWith = defaultLiftBaseWith StMReader
-    restoreM     = defaultRestoreM   unStMReader
+    newtype StM (HayooServerT m) a = StMHayooServer {unStMHayooServer :: ComposeSt (HayooServerT) m a}
+    liftBaseWith = defaultLiftBaseWith StMHayooServer
+    restoreM     = defaultRestoreM   unStMHayooServer
 
 runHayooReader :: HayooServerT m a -> H.ServerAndManager -> m a
 runHayooReader = runReaderT . runHayooServerT
 
 runHayooReaderInIO :: HayooServer a -> H.ServerAndManager -> IO a
-runHayooReaderInIO x sm = unHayooIO $ runHayooReader x sm
+runHayooReaderInIO x sm = runHayooReader x sm
 
 runHayooReader' :: (MonadIO m) => HayooServerT m a -> Text -> m a
 runHayooReader' x s = do
@@ -227,7 +223,7 @@ withServerAndManager' x = do
 
 -- ------------------------
 
-handleSignatureQuery :: (Monad m, MonadIO m, Failure HayooException m) => Text -> m (Either Text Query)
+handleSignatureQuery :: Text -> HayooServer (Either Text Query)
 handleSignatureQuery q
     | "->" `isInfixOf` q = do
         s <- sig
@@ -244,33 +240,28 @@ handleSignatureQuery q
                     sigQ = QBinary Or q1 q2
             (Left err) -> failure $ ParseError err
 
-autocomplete :: (Monad m, MonadIO m, MonadBaseControl IO m, Failure HayooException m, Failure H.HuntClientException m, Failure HttpException m) => Text -> HayooServerT m [Text]
+autocomplete :: Text -> HayooServer [Text]
 autocomplete q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
 
 -- , Failure HayooException m
-query :: (Monad m, MonadIO m, MonadBaseControl IO m, Failure HayooException m, Failure H.HuntClientException m, Failure HttpException m) => Text -> HayooServerT m (H.LimitedResult SearchResult)
+query :: Text -> HayooServer (H.LimitedResult SearchResult)
 query q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.query H.evalQuery $ q'
 
---instance Failure HttpException (Scotty.ActionT TL.Text HayooServer) where
---    failure e = Scotty.raise $ cs $ show e
-
---instance Failure HttpException (HayooServer) where
---    failure e = error $ show e
-
--- TODO: remove!
-instance (Exception e) => Failure e (HayooIO) where
-    failure e = HayooIO $ throwIO e
-
-
-raiseExeptions :: HayooServer a -> Scotty.ActionT TL.Text HayooServer a
+raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a
 raiseExeptions x = do
-   value <- lift $ x
-   return value
-
+    value <- (lift $ x) `catches` handlers
+    return value
+        where
+        handlers
+            = [
+                Handler (\ (ex :: HayooException)   -> Scotty.raise ex),
+                Handler (\ (ex :: H.HuntClientException)  -> Scotty.raise $ HuntClientException ex),
+                Handler (\ (ex :: HttpException)    -> Scotty.raise $ HttpException ex)
+            ]
 
 data HayooConfiguration = HayooConfiguration {
     hayooHost :: String, 

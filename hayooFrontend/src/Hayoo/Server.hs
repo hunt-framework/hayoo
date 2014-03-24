@@ -32,8 +32,6 @@ import Hunt.Server.Client (newServerAndManager)
 
 import Paths_hayooFrontend
 
-type HayooError = TL.Text
-
 start :: HayooConfiguration -> IO ()
 start config = do
     sm <- newServerAndManager $ T.pack $ huntUrl config
@@ -53,7 +51,7 @@ start config = do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
         dispatcher      
 
-dispatcher :: Scotty.ScottyT HayooError HayooServer ()
+dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
     Scotty.get "/" $ do
         params <- Scotty.params
@@ -73,10 +71,10 @@ dispatcher = do
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
 
-renderRoot :: [Scotty.Param] -> Scotty.ActionT HayooError HayooServer ()
+renderRoot :: [Scotty.Param] -> Scotty.ActionT HayooException HayooServer ()
 renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
     where 
-    renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooError HayooServer ()
+    renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooException HayooServer ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = do
         value <- raiseExeptions $ query q
@@ -111,3 +109,5 @@ defaultOptions = Options
 
 modName :: String
 modName = "HayooFrontend"
+
+
