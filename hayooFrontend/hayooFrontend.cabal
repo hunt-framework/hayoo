@@ -41,6 +41,7 @@ executable hayooFrontend
                      , hamlet         >= 1.1   && < 1.2
                      , hayooLib
                      , http-conduit   >= 2.0.0
+                     , http-types     >= 0.8 && < 0.9
                      , hunt-client
                      , hunt-searchengine
                      , hslogger       >= 1.2   && < 1.3

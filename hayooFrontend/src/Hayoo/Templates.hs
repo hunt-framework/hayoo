@@ -163,6 +163,35 @@ renderLimitedRestults limitedRes = [Hamlet.hamlet|
             ^{renderResult result} 
 |]
 
+renderException :: HayooException -> Hamlet.HtmlUrl Routes
+renderException (StringException e) =  [Hamlet.hamlet|
+<div .alert .alert-danger>
+    <strong>
+        Internal Error: 
+    #{e}
+|]
+
+renderException (HuntClientException e) =  [Hamlet.hamlet|
+<div .alert .alert-warning>
+    <strong>
+        Internal Error: 
+    #{show e}
+|]
+
+renderException (HttpException e) =  [Hamlet.hamlet|
+<div .alert .alert-danger>
+    <strong>
+        Connection Error: 
+    #{show e}
+|]
+
+renderException (ParseError e) =  [Hamlet.hamlet|
+<div .alert .alert-info>
+    <strong>
+        Parse Error: 
+    #{show e}
+|]
+
 mainPage :: Hamlet.HtmlUrl Routes
 mainPage = [Hamlet.hamlet|
 <div .jumbotron>

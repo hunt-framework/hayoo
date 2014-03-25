@@ -2,20 +2,17 @@
 
 module Hayoo.Server where
 
-import Data.String (fromString)
 
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Class (lift)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Applicative ((<$>))
 
-import qualified Data.Text as T
--- import qualified Data.Text.Encoding as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
 import           Data.Aeson.Types ()
-import           Data.String.Conversions (cs) -- , (<>))
+import           Data.String (fromString)
+import           Data.String.Conversions (cs)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 
-import qualified Web.Scotty.Trans as Scotty
-
+import           Network.HTTP.Types.Status (internalServerError500)
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import qualified Network.Wai.Handler.Warp as W
 
@@ -25,6 +22,8 @@ import qualified System.Log.Handler as Log (setFormatter)
 import qualified System.Log.Handler.Simple as Log (streamHandler)
 import qualified System.IO as System (stdout)
 
+import qualified Web.Scotty.Trans as Scotty
+
 import qualified Hayoo.Templates as Templates
 
 import Hayoo.Common
@@ -32,13 +31,14 @@ import Hunt.Server.Client (newServerAndManager)
 
 import Paths_hayooFrontend
 
+type HayooAction = Scotty.ActionT HayooException HayooServer
+
 start :: HayooConfiguration -> IO ()
 start config = do
     sm <- newServerAndManager $ T.pack $ huntUrl config
 
     -- Note that 'runM' is only called once, at startup.
-    let runM m = runHayooReaderInIO m sm
-        -- 'runActionToIO' is called once per action.
+    let runM m = runHayooReader m sm
         runActionToIO = runM
 
     initLoggers $ optLogLevel defaultOptions
@@ -53,9 +53,7 @@ start config = do
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
-    Scotty.get "/" $ do
-        params <- Scotty.params
-        renderRoot params
+    Scotty.get "/" $ (Scotty.params >>= renderRoot)
     Scotty.get "/hayoo.js" $ do
         Scotty.setHeader "Content-Type" "text/javascript"
         jsPath <- liftIO $ getDataFileName "hayoo.js"
@@ -64,28 +62,40 @@ dispatcher = do
         Scotty.setHeader "Content-Type" "text/css"
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
-    Scotty.get "/autocomplete" $ do
-        q <- Scotty.param "term"
-        value <- (lift $ autocomplete $ TL.toStrict q) -- >>= raiseOnLeft
-        Scotty.json $ value
+    Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
 
-renderRoot :: [Scotty.Param] -> Scotty.ActionT HayooException HayooServer ()
-renderRoot params = renderRoot' $ (fmap TL.toStrict) $ lookup "query" params
+handleAutocomplete :: HayooAction ()
+handleAutocomplete = do 
+    q <- Scotty.param "term"
+    value <- (raiseExeptions $ autocomplete $ q) -- >>= raiseOnLeft
+    Scotty.json value
+
+
+renderRoot :: [Scotty.Param] -> HayooAction ()
+renderRoot params = renderRoot' $ TL.toStrict <$> lookup "query" params
     where 
-    renderRoot' :: Maybe T.Text -> Scotty.ActionT HayooException HayooServer ()
+    renderRoot' :: Maybe T.Text -> HayooAction ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
-    renderRoot' (Just q) = do
+    renderRoot' (Just q) = renderRoot'' q `Scotty.rescue` (handleException q)
+
+    renderRoot'' q = do
         value <- raiseExeptions $ query q
         Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults value
+
+
+handleException :: T.Text -> HayooException -> HayooAction ()
+handleException q e = do
+    Scotty.status internalServerError500
+    Scotty.html $ Templates.body (cs q) $ Templates.renderException e
             
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".
 javascript :: (Scotty.ScottyError e, Monad m) => T.Text -> Scotty.ActionT e m ()
 javascript t = do
     Scotty.setHeader "Content-Type" "text/javascript"
-    Scotty.raw $ TL.encodeUtf8 $ TL.fromStrict t
+    Scotty.raw $ cs t
 
 
 -- | Initializes the loggers with the given priority.

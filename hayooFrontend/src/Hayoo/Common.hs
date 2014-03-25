@@ -21,26 +21,23 @@ module Hayoo.Common
 , SearchResult (..)
 , HayooServerT (..)
 , HayooServer
-, HayooException
+, HayooException (..)
 -- , hayooServer
 , runHayooReader
 , runHayooReader'
-, runHayooReaderInIO
 , autocomplete
 , query
 , raiseExeptions
 , HayooConfiguration (..)
 ) where
 
-import           Prelude hiding (catch)
 import           GHC.Generics (Generic)
 
 import           Control.Applicative (Applicative)
-import           Control.Exception (Exception, throwIO)
-import           Control.Exception.Lifted (catch, catches, Handler (..))
+import           Control.Exception (Exception)
+import           Control.Exception.Lifted (catches, Handler (..))
 import           Control.Failure (Failure, failure)
 
-import           Control.Monad (liftM)
 import           Control.Monad.Base (MonadBase, liftBase, liftBaseDefault)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
@@ -54,7 +51,6 @@ import           Data.Data (Data)
 import           Data.Map (Map, fromList)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
-import qualified Data.Text.Lazy as TL (Text)
 import           Data.Typeable (Typeable)
 import           Data.Vector ((!))
 
@@ -205,19 +201,14 @@ instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where
 runHayooReader :: HayooServerT m a -> H.ServerAndManager -> m a
 runHayooReader = runReaderT . runHayooServerT
 
-runHayooReaderInIO :: HayooServer a -> H.ServerAndManager -> IO a
-runHayooReaderInIO x sm = runHayooReader x sm
-
 runHayooReader' :: (MonadIO m) => HayooServerT m a -> Text -> m a
 runHayooReader' x s = do
     sm <- H.newServerAndManager s
     runHayooReader x sm
 
--- , MonadBaseControl IO m
 withServerAndManager' :: (MonadIO m, MonadBaseControl IO m) => H.HuntConnectionT (HayooServerT m) b -> HayooServerT m b
 withServerAndManager' x = do
     sm <- ask
-    --sm <- liftIO $ STM.readTVarIO var
     H.withServerAndManager x sm
 
 
@@ -231,7 +222,6 @@ handleSignatureQuery q
         return $ Right s
     | otherwise = return $ Left q
         where
-        -- sig = either (fail . show) (return . (<> "\"") . ("signature:\"" <>) . cs . prettySignature . fst . normalizeSignature) $ parseSignature $ cs q
         sig = case parseSignature $ cs q of
             (Right s) -> return sigQ
                 where
@@ -245,7 +235,6 @@ autocomplete q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
 
--- , Failure HayooException m
 query :: Text -> HayooServer (H.LimitedResult SearchResult)
 query q = do
     q' <- handleSignatureQuery q
