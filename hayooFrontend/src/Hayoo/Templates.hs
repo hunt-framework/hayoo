@@ -4,19 +4,36 @@
 
 module Hayoo.Templates where
 
-import Data.Map (Map, toList)
+import           Data.Map (Map, toList)
+
+import           Control.Lens
+
+import           Data.String.Conversions (cs, (<>))
+import           Data.Text.Lazy (Text)
+import qualified Data.Text as TS
+import qualified Data.Text.Lazy as T
 
 import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
---import qualified Text.Blaze.Html as Blaze (Html)
-import Data.Text.Lazy (Text)
-import qualified Data.Text as TS
-import qualified Data.Text.Lazy as T
+
+import Network.HTTP.Types (renderQuery, simpleQueryToQuery, SimpleQuery, Query)
+
 
 import Hayoo.Common
 import qualified Hunt.Server.Client as Api
 
+
 data Routes = Home | HayooJs | HayooCSS | Autocomplete | Examples | About
+
+urlQ :: Text -> Int -> Text
+urlQ q 0 = cs $ url Home [("query", cs q)]
+urlQ q p = cs $ url Home [("query", cs q), ("page", cs $ show p)]
+
+url :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
+url r q = cs $ (cs $ render r []) <> (renderQuery True simpleQuery)
+    where
+    simpleQuery :: Query
+    simpleQuery = simpleQueryToQuery $ over (mapped . both) cs $ q
 
 render :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
 render Home _ = "/"
@@ -82,7 +99,6 @@ navigation q = [Hamlet.hamlet|
 footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
 <footer>
-
     <a href=@{Home}> Hayoo Frontend
     &copy; 2014 Sebastian Philipp
 |]
@@ -155,13 +171,47 @@ renderResult result@(PackageResult {}) = [Hamlet.hamlet|
             #{resultSynopsis result}
 |]
 
-renderLimitedRestults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
-renderLimitedRestults limitedRes = [Hamlet.hamlet|
+renderLimitedRestults :: Text -> Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+renderLimitedRestults query' lr = [Hamlet.hamlet|
 <ul .list-group>
-    $forall result <- Api.lrResult limitedRes
+    $forall result <- Api.lrResult lr
         <li .list-group-item>
-            ^{renderResult result} 
+            ^{renderResult result}
+<ul .pagination>
+  $if isFirstPage
+      <li .disabled>
+          <span>&laquo;
+  $else
+      <li>
+          <a href="#{urlQ query' leftArrowPage}">&laquo;
+  $forall page <- pages
+      $if page == currentPage
+          <li .disabled>
+              <span>#{page + 1}
+      $else
+          <li>
+              <a href="#{urlQ query' page}">#{page + 1}
+  $if isLastPage
+      <li .disabled>
+          <span>&raquo;
+  $else
+      <li>
+          <a href="#{urlQ query' rightArrowPage}">&raquo;
+          
 |]
+    where
+        isFirstPage = currentPage == 0
+        isLastPage = currentPage == lastPage
+        page offset max' = offset `div` max'
+        lastPage = page (Api.lrCount lr) (Api.lrMax lr)
+        currentPage = page (Api.lrOffset lr) (Api.lrMax lr)
+
+        firstPagerPage = (currentPage - 2) `max` 0
+        lastPagerPage = ((currentPage + 2) `max` 5) `min` lastPage
+        leftArrowPage = (firstPagerPage - 3) `max` 0 
+        rightArrowPage = (lastPagerPage + 3) `min` lastPage 
+        pages = [firstPagerPage .. lastPagerPage]
+        
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|

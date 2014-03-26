@@ -22,6 +22,8 @@ import qualified System.Log.Handler as Log (setFormatter)
 import qualified System.Log.Handler.Simple as Log (streamHandler)
 import qualified System.IO as System (stdout)
 
+import           Text.Read (readMaybe)
+
 import qualified Web.Scotty.Trans as Scotty
 
 import qualified Hayoo.Templates as Templates
@@ -72,17 +74,23 @@ handleAutocomplete = do
     value <- (raiseExeptions $ autocomplete $ q) -- >>= raiseOnLeft
     Scotty.json value
 
+getPage :: [Scotty.Param] -> Int
+getPage params = maybe 0 id $ do
+    page <- lookup "page" params
+    page' <- readMaybe $ cs page
+    return page'
 
 renderRoot :: [Scotty.Param] -> HayooAction ()
 renderRoot params = renderRoot' $ TL.toStrict <$> lookup "query" params
     where 
+    page = getPage params
     renderRoot' :: Maybe T.Text -> HayooAction ()
     renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
     renderRoot' (Just q) = renderRoot'' q `Scotty.rescue` (handleException q)
 
     renderRoot'' q = do
-        value <- raiseExeptions $ query q
-        Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults value
+        value <- raiseExeptions $ query q page
+        Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults (cs q) value
 
 
 handleException :: T.Text -> HayooException -> HayooAction ()

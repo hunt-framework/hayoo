@@ -235,10 +235,10 @@ autocomplete q = do
     q' <- handleSignatureQuery q
     withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
 
-query :: Text -> HayooServer (H.LimitedResult SearchResult)
-query q = do
+query :: Text -> Int -> HayooServer (H.LimitedResult SearchResult)
+query q p = do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ either H.query H.evalQuery $ q'
+    withServerAndManager' $ ((either H.query H.evalQuery) q' (p * 20) )
 
 raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a
 raiseExeptions x = do
