@@ -25,6 +25,10 @@
   color: grey;
 }
 
+.breadcrumb {
+  margin-bottom: 0px;
+}
+
 
 footer {
   border-top: lightgrey 1px solid;

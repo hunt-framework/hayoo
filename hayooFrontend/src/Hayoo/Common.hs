@@ -29,6 +29,12 @@ module Hayoo.Common
 , query
 , raiseExeptions
 , HayooConfiguration (..)
+-- ----
+, stablePartitionBy
+, mergeResults
+, ModuleResult
+, PackageResult
+, convertResults
 ) where
 
 import           GHC.Generics (Generic)
@@ -38,6 +44,7 @@ import           Control.Exception (Exception)
 import           Control.Exception.Lifted (catches, Handler (..))
 import           Control.Failure (Failure, failure)
 
+import           Control.Applicative ((<$>))
 import           Control.Monad.Base (MonadBase, liftBase, liftBaseDefault)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
@@ -47,7 +54,9 @@ import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT,)
 import           Data.Aeson
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Data (Data)
+import           Data.Function (on)
 
+import           Data.List (groupBy, partition, find)
 import           Data.Map (Map, fromList)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
@@ -260,3 +269,37 @@ data HayooConfiguration = HayooConfiguration {
 
 modName :: String
 modName = "HayooFrontend"
+
+-- --------------------------
+
+type ModuleResult = (Maybe SearchResult, [SearchResult])
+type PackageResult = (Maybe SearchResult, [ModuleResult])
+
+extract :: ResultType -> [SearchResult] -> ([SearchResult], [SearchResult])
+extract t = partition (\sr -> t == resultType sr)
+
+
+-- | /O(n^2)/. An alternative implementaion would be something like groupBy $ stableSortBy 
+stablePartitionBy :: (a -> a -> Bool) -> [a] -> [[a]]
+stablePartitionBy _ [] = []
+stablePartitionBy f (x:xs) = (x : xsIn) : stablePartitionBy f xsOut
+    where 
+    (xsIn, xsOut) = partition (f x) xs
+
+
+mergeResults :: [SearchResult] -> [PackageResult]
+mergeResults srs = packageResults'
+    where
+    (packages,rest') = extract Package srs
+    (modules, rest)  = extract Module rest'
+    moduleResults :: [[SearchResult]]
+    moduleResults    = stablePartitionBy ((==) `on` resultModule) rest
+    moduleResults' :: [ModuleResult]
+    moduleResults'   = (\srs' -> (find (\ mr -> resultModule mr == (resultModule $ head srs')) modules, srs')) <$> moduleResults
+    packageResults :: [[ModuleResult]]
+    packageResults   = stablePartitionBy ((==) `on` (resultPackage . head . snd)) moduleResults'
+    packageResults' :: [PackageResult]
+    packageResults'  = (\srs' -> (find (\ mr -> resultPackage mr == (resultPackage $ head $ snd $ head srs')) modules, srs')) <$> packageResults
+
+convertResults :: ([a] -> [b]) -> H.LimitedResult a -> H.LimitedResult b
+convertResults f (H.LimitedResult r x y z) = H.LimitedResult (f r) x y z 

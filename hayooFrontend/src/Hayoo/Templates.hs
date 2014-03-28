@@ -1,14 +1,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Hayoo.Templates where
 
-import           Data.Map (Map, toList)
-
+import           Control.Applicative ((<$>))
 import           Control.Lens
 
-import           Data.String.Conversions (cs, (<>))
+import           Data.Map (Map, toList)
+import           Data.Monoid (mconcat)
+
+import           Data.String.Conversions (cs, (<>), ConvertibleStrings)
 import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
@@ -25,9 +28,19 @@ import qualified Hunt.Server.Client as Api
 
 data Routes = Home | HayooJs | HayooCSS | Autocomplete | Examples | About
 
-urlQ :: Text -> Int -> Text
+urlQ :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => a -> Int -> b
 urlQ q 0 = cs $ url Home [("query", cs q)]
 urlQ q p = cs $ url Home [("query", cs q), ("page", cs $ show p)]
+
+urlQ0 :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => a -> b
+urlQ0 q = urlQ q 0
+
+urlQ'L :: Text -> Int -> Text
+urlQ'L = urlQ
+
+urlQ'S :: TS.Text -> Int -> TS.Text
+urlQ'S = urlQ
+
 
 url :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
 url r q = cs $ (cs $ render r []) <> (renderQuery True simpleQuery)
@@ -120,6 +133,9 @@ $doctype 5
 mainUri :: Map TS.Text TS.Text -> TS.Text
 mainUri m = snd $ head $ toList m
 
+
+-- ---------------------------------
+{-}
 renderResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
 renderResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 <div .panel-heading>
@@ -170,33 +186,81 @@ renderResult result@(PackageResult {}) = [Hamlet.hamlet|
         <p .description .more>
             #{resultSynopsis result}
 |]
+-}
+-- -------------------------------------
 
-renderLimitedRestults :: Text -> Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
-renderLimitedRestults query' lr = [Hamlet.hamlet|
-<ul .list-group>
-    $forall result <- Api.lrResult lr
-        <li .list-group-item>
-            ^{renderResult result}
+renderResult :: SearchResult -> Hamlet.HtmlUrl Routes
+renderResult r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
+<p>
+    <a href=#{mainUri $ resultUri r}>
+        #{resultName r}
+    :: #{resultSignature r}
+    <span .label .label-default>
+        Class Method
+|]
+
+renderResult r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
+<p>
+    <a href=#{mainUri $ resultUri r}>
+        #{resultName r}
+    :: #{resultSignature r}
+|]
+
+renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
+<p>
+    #{show $ resultType r}
+    <a href=#{mainUri $ resultUri r}>
+        #{resultName r}
+|]
+
+breadcrump :: ModuleResult -> [(TS.Text, TS.Text)]
+breadcrump (_, r:_) = [
+        (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
+        (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
+    ]
+
+renderModule :: ModuleResult -> Hamlet.HtmlUrl Routes
+renderModule m = [Hamlet.hamlet|
+<div .panel-heading>
+    <ol .breadcrumb>
+        $forall (url, part) <- (breadcrump m)
+            <li>
+                <a href="#{url}">#{part}
+<div .panel-body>
+    $forall r <- (snd m)
+        ^{renderResult r}
+|]
+
+renderPackage :: PackageResult ->  Hamlet.HtmlUrl Routes
+renderPackage (_,res) = [Hamlet.hamlet|
+<div .panel .panel-default>
+    $forall m <- res
+        ^{renderModule m}
+
+|]
+
+renderPagination :: Text -> Api.LimitedResult a -> Hamlet.HtmlUrl Routes
+renderPagination query' lr = [Hamlet.hamlet|
 <ul .pagination>
   $if isFirstPage
       <li .disabled>
           <span>&laquo;
   $else
       <li>
-          <a href="#{urlQ query' leftArrowPage}">&laquo;
+          <a href="#{urlQ'L query' leftArrowPage}">&laquo;
   $forall page <- pages
       $if page == currentPage
           <li .disabled>
               <span>#{page + 1}
       $else
           <li>
-              <a href="#{urlQ query' page}">#{page + 1}
+              <a href="#{urlQ'L query' page}">#{page + 1}
   $if isLastPage
       <li .disabled>
           <span>&raquo;
   $else
       <li>
-          <a href="#{urlQ query' rightArrowPage}">&raquo;
+          <a href="#{urlQ'L query' rightArrowPage}">&raquo;
           
 |]
     where
@@ -212,6 +276,14 @@ renderLimitedRestults query' lr = [Hamlet.hamlet|
         rightArrowPage = (lastPagerPage + 3) `min` lastPage 
         pages = [firstPagerPage .. lastPagerPage]
         
+
+
+renderMergedLimitedResults :: Text -> Api.LimitedResult PackageResult -> Hamlet.HtmlUrl Routes
+renderMergedLimitedResults query' lr = [Hamlet.hamlet|
+$forall result <- Api.lrResult lr
+    ^{renderPackage result}
+^{renderPagination query' lr}
+|]
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|

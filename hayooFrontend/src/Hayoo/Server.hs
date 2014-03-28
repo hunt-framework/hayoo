@@ -89,9 +89,11 @@ renderRoot params = renderRoot' $ TL.toStrict <$> lookup "query" params
     renderRoot' (Just q) = renderRoot'' q `Scotty.rescue` (handleException q)
 
     renderRoot'' q = do
-        value <- raiseExeptions $ query q page
-        Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults (cs q) value
-
+        results <- raiseExeptions $ query q page
+        --Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults (cs q) value
+        let
+            mergedResults = mergeResults `convertResults` results
+        Scotty.html $ Templates.body (cs q) $ Templates.renderMergedLimitedResults (cs q) mergedResults
 
 handleException :: T.Text -> HayooException -> HayooAction ()
 handleException q e = do
