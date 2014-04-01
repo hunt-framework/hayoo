@@ -130,8 +130,8 @@ $doctype 5
         ^{footer}
 |] render
 
-mainUri :: Map TS.Text TS.Text -> TS.Text
-mainUri m = snd $ head $ toList m
+mainUri :: a -> a
+mainUri m = m --snd $ head $ toList m
 
 ajax :: Hamlet.HtmlUrl Routes -> T.Text 
 ajax content = T.pack $ Blaze.renderHtml $ content render

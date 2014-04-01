@@ -100,7 +100,7 @@ data SearchResult =
 #else
         resultRank :: Double,
 #endif
-        resultUri :: (Map Text Text), 
+        resultUri :: Text, 
         resultPackage :: Text,
         resultModule :: Text,
         resultName :: Text,
@@ -115,7 +115,7 @@ data SearchResult =
 #else
         resultRank :: Double,
 #endif
-        resultUri :: (Map Text Text),  
+        resultUri :: Text,  
         resultName :: Text,
         resultDependencies :: Text,
         resultMaintainer :: Text,
@@ -125,11 +125,6 @@ data SearchResult =
         resultType :: ResultType
     }  deriving (Show, Eq, Generic)
 
-parseUri :: (Monad m) => Text -> ByteString -> m (Map Text Text)
-parseUri key t = 
-    case eitherDecode t of
-        Right v -> return v
-        Left _ -> return $ fromList [(key, cs t)]
 
 parsePackageResult rank descr baseUri n = do
     dep <- descr .:? "dependencies" .!= ""
@@ -137,16 +132,16 @@ parsePackageResult rank descr baseUri n = do
     s  <- descr .:? "synopsis" .!= ""
     a  <- descr .:? "author" .!= ""
     cat  <- descr .:? "category" .!= ""
-    u <- parseUri m baseUri -- unparsedUri
-    return $ PackageResult rank u n dep m s a cat Package
+--    u <- baseUri -- unparsedUri
+    return $ PackageResult rank baseUri n dep m s a cat Package
 
 parseNonPackageResult rank descr baseUri n d t = do
     p  <- descr .:? "package" .!= "unknown"
     m  <- descr .:? "module" .!= "Unknown"
     s  <- descr .:? "signature" .!= ""
     c  <- descr .:? "source" .!= ""
-    u <- parseUri p baseUri -- unparsedUri
-    return $ NonPackageResult rank  u p m n s d c t 
+--    u <- baseUri -- unparsedUri
+    return $ NonPackageResult rank  baseUri p m n s d c t 
 
 -- Partial Type Signature
 -- parseSearchResult :: Double -> Value -> _

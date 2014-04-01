@@ -51,15 +51,15 @@ executable hayooFrontend
                      , mtl            >= 2.1
                      , parsec         >= 3.1   && < 4
                      , scientific     >= 0.2
-                     , scotty         >= 0.6   && < 0.7
+                     , scotty         >= 0.7   && < 0.8
                      , shakespeare-js >= 1.2
                      , string-conversions     >= 0.3.0.2
                      , text           >= 1     && < 2
                      , transformers   >= 0.3
                      , transformers-base >= 0.4 && < 0.5
                      , vector         >= 0.10
-                     , wai-extra      >= 2.0   && < 2.1
-                     , warp           >= 2.0   && < 2.1
+                     , wai-extra      >= 2.1   && < 2.2
+                     , warp           >= 2.1   && < 2.2
 
   ghc-options: -Wall -funbox-strict-fields -fwarn-tabs
 
