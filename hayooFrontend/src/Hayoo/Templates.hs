@@ -133,6 +133,9 @@ $doctype 5
 mainUri :: Map TS.Text TS.Text -> TS.Text
 mainUri m = snd $ head $ toList m
 
+ajax :: Hamlet.HtmlUrl Routes -> T.Text 
+ajax content = T.pack $ Blaze.renderHtml $ content render
+
 
 -- ---------------------------------
 {-}
@@ -213,11 +216,33 @@ renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
         #{resultName r}
 |]
 
+renderResult r@(PackageResult {}) = [Hamlet.hamlet|
+<p>
+    package
+    <a href=#{mainUri $ resultUri r}>
+        #{resultName r}
+|]
+
+
+renderResults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+renderResults results = [Hamlet.hamlet|
+$forall r <- Api.lrResult results
+    ^{renderResult r}
+|]
+
 breadcrump :: ModuleResult -> [(TS.Text, TS.Text)]
 breadcrump (_, r:_) = [
         (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
         (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
     ]
+breadcrump (_, []) = error "breadcrump: empty"
+
+moduleHtmlId :: ModuleResult -> TS.Text
+moduleHtmlId (_, r:_) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
+moduleHtmlId (_, []) = error "moduleHtmlId: empty"
+
+moduleHtmlQuery (_, r:_) = "package:" <> resultPackage r <> " module:" <> resultModule r
+moduleHtmlQuery (_, []) = error "moduleHtmlQuery: empty"
 
 renderModule :: ModuleResult -> Hamlet.HtmlUrl Routes
 renderModule m = [Hamlet.hamlet|
@@ -226,9 +251,11 @@ renderModule m = [Hamlet.hamlet|
         $forall (url, part) <- (breadcrump m)
             <li>
                 <a href="#{url}">#{part}
-<div .panel-body>
+<div .panel-body id="#{moduleHtmlId m}">
     $forall r <- (snd m)
         ^{renderResult r}
+    <button type="button" href="#" .btn .btn-default .btn-xs onclick="fillModule('#{moduleHtmlId m}','#{moduleHtmlQuery m}')">
+        show more...
 |]
 
 renderPackage :: PackageResult ->  Hamlet.HtmlUrl Routes
@@ -312,6 +339,13 @@ renderException (ParseError e) =  [Hamlet.hamlet|
     <strong>
         Parse Error: 
     #{show e}
+|]
+
+renderException FileNotFound = [Hamlet.hamlet|
+<div .alert .alert-info>
+    <strong>
+        404: 
+    File Not Found.
 |]
 
 mainPage :: Hamlet.HtmlUrl Routes

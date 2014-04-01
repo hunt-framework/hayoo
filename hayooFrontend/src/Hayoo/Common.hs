@@ -58,6 +58,7 @@ import           Data.Function (on)
 
 import           Data.List (groupBy, partition, find)
 import           Data.Map (Map, fromList)
+import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
 import           Data.Typeable (Typeable)
@@ -87,8 +88,10 @@ data ResultType = Class | Data | Function | Method | Module | Newtype | Package 
 
 
 instance FromJSON ResultType where
-     parseJSON = genericParseJSON H.lowercaseConstructorsOptions
+    parseJSON = genericParseJSON H.lowercaseConstructorsOptions
 
+instance ToJSON ResultType where
+    toJSON = genericToJSON H.lowercaseConstructorsOptions
 
 data SearchResult =
     NonPackageResult {
@@ -120,7 +123,7 @@ data SearchResult =
         resultAuthor :: Text,
         resultCategory :: Text,
         resultType :: ResultType
-    }  deriving (Show, Eq)
+    }  deriving (Show, Eq, Generic)
 
 parseUri :: (Monad m) => Text -> ByteString -> m (Map Text Text)
 parseUri key t = 
@@ -171,12 +174,14 @@ instance FromJSON SearchResult where
         parseSearchResult rank o
     parseJSON _ = fail "FromJSON SearchResult: Expected Tuple (Array) for SearchResult"
 
+instance ToJSON SearchResult where
 
 data HayooException = 
       ParseError ParseError
     | HuntClientException H.HuntClientException
     | HttpException HttpException
     | StringException Text  
+    | FileNotFound
     deriving (Show, Typeable)
 
 instance Exception HayooException
@@ -185,6 +190,9 @@ instance Scotty.ScottyError HayooException where
     stringError s = StringException $ cs s
 
     showError e = cs $ show e
+
+instance IsString HayooException where
+        fromString s = StringException $ cs s
 
 newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAndManager m a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadReader (H.ServerAndManager), MonadTrans)

@@ -29,7 +29,7 @@ import qualified Web.Scotty.Trans as Scotty
 import qualified Hayoo.Templates as Templates
 
 import Hayoo.Common
-import Hunt.Server.Client (newServerAndManager)
+import Hunt.Server.Client (newServerAndManager, LimitedResult)
 
 import Paths_hayooFrontend
 
@@ -55,7 +55,9 @@ start config = do
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
-    Scotty.get "/" $ (Scotty.params >>= renderRoot)
+    Scotty.get "/"     $ (Scotty.params >>= renderRoot)
+    Scotty.get "/json" $ (Scotty.params >>= jsonQuery Scotty.json) `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
+    Scotty.get "/ajax" $ (Scotty.params >>= jsonQuery (Scotty.html . Templates.ajax . Templates.renderResults))
     Scotty.get "/hayoo.js" $ do
         Scotty.setHeader "Content-Type" "text/javascript"
         jsPath <- liftIO $ getDataFileName "hayoo.js"
@@ -67,6 +69,7 @@ dispatcher = do
     Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
+    Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
 handleAutocomplete = do 
@@ -94,6 +97,14 @@ renderRoot params = renderRoot' $ TL.toStrict <$> lookup "query" params
         let
             mergedResults = mergeResults `convertResults` results
         Scotty.html $ Templates.body (cs q) $ Templates.renderMergedLimitedResults (cs q) mergedResults
+
+jsonQuery :: (LimitedResult SearchResult -> HayooAction ()) -> [Scotty.Param] -> HayooAction ()
+jsonQuery repr params = do
+    q <- maybe (Scotty.raise "invalid Arguemtent") return $ lookup "query" params
+    let page = getPage params
+    value <- raiseExeptions $ query (TL.toStrict q) page
+    repr value
+
 
 handleException :: T.Text -> HayooException -> HayooAction ()
 handleException q e = do

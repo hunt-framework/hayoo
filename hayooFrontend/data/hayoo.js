@@ -62,3 +62,14 @@ $().ready(function() {
 $(document).ready(function() {
     makeMores()
 });
+
+
+function fillModule(id, query) {
+    $.ajax({
+        url: "/ajax",
+        data: { query: query}
+    })
+    .done(function( html ) {
+        $( "#" + id ).html(html);
+    });
+}
