@@ -55,9 +55,11 @@ start config = do
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
-    Scotty.get "/"     $ (Scotty.params >>= renderRoot)
-    Scotty.get "/json" $ (Scotty.params >>= jsonQuery Scotty.json) `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
-    Scotty.get "/ajax" $ (Scotty.params >>= jsonQuery (Scotty.html . Templates.ajax . Templates.renderResults))
+    Scotty.get "/"       $ (controlGroupedResults)
+    Scotty.get "/json"   $ (controlSimpleResults Scotty.json)
+    Scotty.get "/ajax"   $ (controlSimpleResults (Scotty.html . Templates.ajax . Templates.renderResults))
+    Scotty.get "/simple" $ (controlSimpleHtmlResults)
+
     Scotty.get "/hayoo.js" $ do
         Scotty.setHeader "Content-Type" "text/javascript"
         jsPath <- liftIO $ getDataFileName "hayoo.js"
@@ -83,33 +85,38 @@ getPage params = maybe 0 id $ do
     page' <- readMaybe $ cs page
     return page'
 
-renderRoot :: [Scotty.Param] -> HayooAction ()
-renderRoot params = renderRoot' $ TL.toStrict <$> lookup "query" params
-    where 
-    page = getPage params
-    renderRoot' :: Maybe T.Text -> HayooAction ()
-    renderRoot' Nothing = Scotty.html $ Templates.body "" Templates.mainPage
-    renderRoot' (Just q) = renderRoot'' q `Scotty.rescue` (handleException q)
+controlGroupedResults :: HayooAction ()
+controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.body "" Templates.mainPage) handleException 
+    where
+    renderMerged q results = Scotty.html $ Templates.body (cs q) $ Templates.renderMergedLimitedResults (cs q) mergedResults
+        where
+        mergedResults = mergeResults `convertResults` results
 
-    renderRoot'' q = do
-        results <- raiseExeptions $ query q page
-        --Scotty.html $ Templates.body (cs q) $ Templates.renderLimitedRestults (cs q) value
-        let
-            mergedResults = mergeResults `convertResults` results
-        Scotty.html $ Templates.body (cs q) $ Templates.renderMergedLimitedResults (cs q) mergedResults
+controlSimpleHtmlResults :: HayooAction ()
+controlSimpleHtmlResults = controlResults render def handleException 
+    where
+        render :: TL.Text -> LimitedResult SearchResult -> HayooAction ()
+        render q r = Scotty.html $ Templates.body q (Templates.renderResults r)
+        def = (Scotty.html $ Templates.body "" Templates.mainPage)
 
-jsonQuery :: (LimitedResult SearchResult -> HayooAction ()) -> [Scotty.Param] -> HayooAction ()
-jsonQuery repr params = do
-    q <- maybe (Scotty.raise "invalid Arguemtent") return $ lookup "query" params
-    let page = getPage params
-    value <- raiseExeptions $ query (TL.toStrict q) page
-    repr value
+controlSimpleResults ::  (LimitedResult SearchResult -> HayooAction ()) -> HayooAction ()
+controlSimpleResults repr = controlResults (\_ -> repr) (Scotty.raise "invalid Arguemtent")  (\_ _ -> Scotty.json ([]::[()]))
+
+controlResults :: (TL.Text -> LimitedResult SearchResult -> HayooAction ()) -> HayooAction () -> (TL.Text -> HayooException -> HayooAction ()) -> HayooAction ()
+controlResults repr emptyRepr exceptionHandler = do
+    params <- Scotty.params
+    case lookup "query" params of
+        (Just q) -> do
+            let page = getPage params
+            ((raiseExeptions $ query (cs q) page) >>= repr (cs q)) `Scotty.rescue`  exceptionHandler (cs q)
+        Nothing -> emptyRepr
+    
 
 
-handleException :: T.Text -> HayooException -> HayooAction ()
+handleException :: TL.Text -> HayooException -> HayooAction ()
 handleException q e = do
     Scotty.status internalServerError500
-    Scotty.html $ Templates.body (cs q) $ Templates.renderException e
+    Scotty.html $ Templates.body q $ Templates.renderException e
             
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".
