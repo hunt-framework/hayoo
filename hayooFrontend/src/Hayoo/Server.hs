@@ -69,8 +69,8 @@ dispatcher = do
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
     Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
-    Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
-    Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about
+    Scotty.get "/examples" $ Scotty.html $ Templates.body "" Boxed Templates.examples
+    Scotty.get "/about" $ Scotty.html $ Templates.body "" Boxed Templates.about
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
@@ -86,9 +86,9 @@ getPage params = maybe 0 id $ do
     return page'
 
 controlGroupedResults :: HayooAction ()
-controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.body "" Templates.mainPage) handleException 
+controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.body "" Boxed Templates.mainPage) handleException 
     where
-    renderMerged q results = Scotty.html $ Templates.body (cs q) $ Templates.renderMergedLimitedResults (cs q) mergedResults
+    renderMerged q results = Scotty.html $ Templates.body (cs q) Boxed $ Templates.renderMergedLimitedResults (cs q) mergedResults
         where
         mergedResults = mergeResults `convertResults` results
 
@@ -96,8 +96,8 @@ controlSimpleHtmlResults :: HayooAction ()
 controlSimpleHtmlResults = controlResults render def handleException 
     where
         render :: TL.Text -> LimitedResult SearchResult -> HayooAction ()
-        render q r = Scotty.html $ Templates.body q (Templates.renderResults r)
-        def = (Scotty.html $ Templates.body "" Templates.mainPage)
+        render q r = Scotty.html $ Templates.body q Grouped (Templates.renderBoxedResults r)
+        def = (Scotty.html $ Templates.body "" Grouped Templates.mainPage)
 
 controlSimpleResults ::  (LimitedResult SearchResult -> HayooAction ()) -> HayooAction ()
 controlSimpleResults repr = controlResults (\_ -> repr) (Scotty.raise "invalid Arguemtent")  (\_ _ -> Scotty.json ([]::[()]))
@@ -116,7 +116,7 @@ controlResults repr emptyRepr exceptionHandler = do
 handleException :: TL.Text -> HayooException -> HayooAction ()
 handleException q e = do
     Scotty.status internalServerError500
-    Scotty.html $ Templates.body q $ Templates.renderException e
+    Scotty.html $ Templates.body q Boxed $ Templates.renderException e
             
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".

@@ -35,6 +35,8 @@ module Hayoo.Common
 , ModuleResult
 , PackageResult
 , convertResults
+-- --------
+, DisplayType (..)
 ) where
 
 import           GHC.Generics (Generic)
@@ -306,3 +308,7 @@ mergeResults srs = packageResults'
 
 convertResults :: ([a] -> [b]) -> H.LimitedResult a -> H.LimitedResult b
 convertResults f (H.LimitedResult r x y z) = H.LimitedResult (f r) x y z 
+
+-- -------------------------------
+
+data DisplayType = Grouped | Boxed

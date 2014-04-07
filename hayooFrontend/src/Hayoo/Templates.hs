@@ -26,20 +26,23 @@ import Hayoo.Common
 import qualified Hunt.Server.Client as Api
 
 
-data Routes = Home | HayooJs | HayooCSS | Autocomplete | Examples | About
+data Routes = Home | Simple | HayooJs | HayooCSS | Autocomplete | Examples | About
 
-urlQ :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => a -> Int -> b
-urlQ q 0 = cs $ url Home [("query", cs q)]
-urlQ q p = cs $ url Home [("query", cs q), ("page", cs $ show p)]
+urlQ :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => Routes -> a -> Int -> b
+urlQ r q 0 = cs $ url r [("query", cs q)]
+urlQ r q p = cs $ url r [("query", cs q), ("page", cs $ show p)]
 
 urlQ0 :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => a -> b
-urlQ0 q = urlQ q 0
+urlQ0 q = urlQ Home q 0
 
 urlQ'L :: Text -> Int -> Text
-urlQ'L = urlQ
+urlQ'L = urlQ Home 
+
+urlQ'L' :: Routes -> Text -> Int -> Text
+urlQ'L' r = urlQ r 
 
 urlQ'S :: TS.Text -> Int -> TS.Text
-urlQ'S = urlQ
+urlQ'S = urlQ Home 
 
 
 url :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
@@ -50,6 +53,7 @@ url r q = cs $ (cs $ render r []) <> (renderQuery True simpleQuery)
 
 render :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
 render Home _ = "/"
+render Simple _ = "/simple/"
 render HayooJs _ = "/hayoo.js"
 render HayooCSS _ = "/hayoo.css"
 render Autocomplete _ = "/autocomplete"
@@ -80,8 +84,8 @@ header q = [Hamlet.hamlet|
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 |]
 
-navigation :: Text -> Hamlet.HtmlUrl Routes
-navigation q = [Hamlet.hamlet|
+navigation :: Text -> DisplayType -> Hamlet.HtmlUrl Routes
+navigation q t = [Hamlet.hamlet|
 <div .navbar .navbar-default .navbar-static-top role="navigation">
 
     <div .navbar-header .navbar-left>
@@ -102,7 +106,9 @@ navigation q = [Hamlet.hamlet|
                     <input .btn .btn-default #submit type="submit" value="Search">
 
         <ul .nav .navbar-nav .navbar-right>
-            <li >
+            <li>
+                ^{otherResultType q t}
+            <li>
                 <a href=@{Examples}>Examples
             <li>
                 <a href=@{About}>About
@@ -116,13 +122,13 @@ footer = [Hamlet.hamlet|
     &copy; 2014 Sebastian Philipp
 |]
 
-body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
-body q content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
+body :: Text -> DisplayType -> Hamlet.HtmlUrl Routes -> T.Text 
+body q t content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
 $doctype 5
 <html lang="en">
     ^{header q}
     <body>
-        ^{navigation q}
+        ^{navigation q t}
         
         <div class="container">
             ^{content}
@@ -136,11 +142,21 @@ mainUri m = m --snd $ head $ toList m
 ajax :: Hamlet.HtmlUrl Routes -> T.Text 
 ajax content = T.pack $ Blaze.renderHtml $ content render
 
+otherResultType :: Text -> DisplayType -> Hamlet.HtmlUrl Routes
+otherResultType q Boxed = [Hamlet.hamlet|
+<a href="#{urlQ'L' Simple q 0}">
+    Simple
+|]
+
+otherResultType q Grouped = [Hamlet.hamlet|
+<a href="#{urlQ'L' Home q 0}">
+    Grouped
+|]
 
 -- ---------------------------------
-{-}
-renderResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
-renderResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
+
+renderBoxedResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
+renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 <div .panel-heading>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
@@ -149,21 +165,21 @@ renderResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
         Class Method
 |]
 
-renderResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
+renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 <div .panel-heading>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
 |]
 
-renderResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
+renderBoxedResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
     #{show $ resultType r}
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
 |]
 
-renderResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
+renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
@@ -171,10 +187,10 @@ renderResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
         Package
 |]
 
-renderResult :: SearchResult -> Hamlet.HtmlUrl Routes
-renderResult result@(NonPackageResult {}) = [Hamlet.hamlet|
+renderBoxedResult :: SearchResult -> Hamlet.HtmlUrl Routes
+renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderResultHeading result} 
+    ^{renderBoxedResultHeading result} 
     <div .panel-body>
         <p>
             #{resultPackage result} - #{resultModule result}
@@ -182,14 +198,20 @@ renderResult result@(NonPackageResult {}) = [Hamlet.hamlet|
             #{resultDescription result}
 |]
 
-renderResult result@(PackageResult {}) = [Hamlet.hamlet|
+renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderResultHeading result} 
+    ^{renderBoxedResultHeading result} 
     <div .panel-body>
         <p .description .more>
             #{resultSynopsis result}
 |]
--}
+
+renderBoxedResults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+renderBoxedResults results = [Hamlet.hamlet|
+$forall r <- Api.lrResult results
+    ^{renderBoxedResult r}
+|]
+
 -- -------------------------------------
 
 renderResult :: SearchResult -> Hamlet.HtmlUrl Routes
