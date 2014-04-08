@@ -23,12 +23,33 @@
 .description {
   font-size: small;
   color: grey;
+  padding-left: 1em;
 }
 
 .breadcrumb {
   margin-bottom: 0px;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
+.panel {
+  margin-bottom: 5px;
+}
+
+.panel-heading {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.panel-body {
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+
+.resultLine {
+  margin-bottom: 5px;
+  margin-top: 5px;
+}
 
 footer {
   border-top: lightgrey 1px solid;

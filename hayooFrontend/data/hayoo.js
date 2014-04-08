@@ -19,7 +19,7 @@ function makeAutocomplete() {
 
 
 function makeMores () {
-    var showChar = 300;
+    var showChar = 150;
     var ellipsestext = "...";
     var moretext = "more";
     var lesstext = "less";
@@ -66,10 +66,10 @@ $(document).ready(function() {
 
 function fillModule(id, query) {
     $.ajax({
-        url: "/ajax",
-        data: { query: query}
+        url: "/ajax/" + query
     })
     .done(function( html ) {
         $( "#" + id ).html(html);
+        makeMores()
     });
 }

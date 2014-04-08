@@ -22,12 +22,13 @@ module Hayoo.Common
 , HayooServerT (..)
 , HayooServer
 , HayooException (..)
+, HayooAction 
 -- , hayooServer
 , runHayooReader
 , runHayooReader'
 , autocomplete
 , query
-, raiseExeptions
+, queryMore
 , HayooConfiguration (..)
 -- ----
 , stablePartitionBy
@@ -82,6 +83,7 @@ import qualified Web.Scotty.Trans as Scotty
 
 import qualified Hunt.Server.Client as H
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
+import           Hunt.Query.Language.Parser (parseQuery)
 
 import           Hayoo.ParseSignature
 
@@ -196,6 +198,8 @@ newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAnd
 
 type HayooServer = HayooServerT IO
 
+type HayooAction = Scotty.ActionT HayooException HayooServer
+
 -- from http://hackage.haskell.org/package/transformers-base-0.4.1/docs/src/Control-Monad-Base.html
 instance (MonadBase b m) => MonadBase b (HayooServerT m) where
     liftBase = liftBaseDefault
@@ -228,13 +232,13 @@ withServerAndManager' x = do
 
 -- ------------------------
 
-handleSignatureQuery :: Text -> HayooServer (Either Text Query)
+handleSignatureQuery :: (Monad m, Failure HayooException m, MonadIO m) => Text -> m Query
 handleSignatureQuery q
     | "->" `isInfixOf` q = do
         s <- sig
         liftIO $ Log.debugM modName ("Signature Query: " <> (cs q) <> " >>>>>> " <> (show s))
-        return $ Right s
-    | otherwise = return $ Left q
+        return s
+    | otherwise = normalQuery
         where
         sig = case parseSignature $ cs q of
             (Right s) -> return sigQ
@@ -243,16 +247,28 @@ handleSignatureQuery q
                     q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
                     sigQ = QBinary Or q1 q2
             (Left err) -> failure $ ParseError err
+        normalQuery = case parseQuery (cs q) of 
+            (Right q') -> return q'
+            (Left err) -> failure $ StringException err
 
-autocomplete :: Text -> HayooServer [Text]
-autocomplete q = do
+autocomplete :: Text -> HayooAction [Text]
+autocomplete q = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ either H.autocomplete (H.evalAutocomplete q) $ q'
+    withServerAndManager' $ H.evalAutocomplete q q'
 
-query :: Text -> Int -> HayooServer (H.LimitedResult SearchResult)
-query q p = do
+query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
+query q p = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ ((either H.query H.evalQuery) q' (p * 20) )
+    withServerAndManager' $ H.evalQuery q' (p * 20)
+
+queryMore :: Text -> Text -> Text -> Int -> HayooAction (H.LimitedResult SearchResult)
+queryMore package m' q p = raiseExeptions $ do
+    q' <- handleSignatureQuery q
+    let qq = foldr1 (QBinary And) [q', qm, qp]
+    withServerAndManager' $ H.evalQuery qq (p * 20) 
+    where
+    qp = QContext ["package"] $ QWord QCase package
+    qm = QContext ["module"] $ QWord QCase m'    
 
 raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a
 raiseExeptions x = do

@@ -44,7 +44,6 @@ urlQ'L' r = urlQ r
 urlQ'S :: TS.Text -> Int -> TS.Text
 urlQ'S = urlQ Home 
 
-
 url :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
 url r q = cs $ (cs $ render r []) <> (renderQuery True simpleQuery)
     where
@@ -106,7 +105,7 @@ navigation q t = [Hamlet.hamlet|
                     <input .btn .btn-default #submit type="submit" value="Search">
 
         <ul .nav .navbar-nav .navbar-right>
-            <li>
+            <li .active>
                 ^{otherResultType q t}
             <li>
                 <a href=@{Examples}>Examples
@@ -216,30 +215,36 @@ $forall r <- Api.lrResult results
 
 renderResult :: SearchResult -> Hamlet.HtmlUrl Routes
 renderResult r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
-<p>
+<p .resultLine>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
     <span .label .label-default>
         Class Method
+<p .description .more>
+    #{resultDescription r}
 |]
 
 renderResult r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
-<p>
+<p .resultLine>
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
+<p .description .more>
+    #{resultDescription r}
 |]
 
 renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
-<p>
+<p .resultLine>
     #{show $ resultType r}
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
+<p .description .more>
+    #{resultDescription r}
 |]
 
 renderResult r@(PackageResult {}) = [Hamlet.hamlet|
-<p>
+<p .resultLine>
     package
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
@@ -263,11 +268,12 @@ moduleHtmlId :: ModuleResult -> TS.Text
 moduleHtmlId (_, r:_) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
 moduleHtmlId (_, []) = error "moduleHtmlId: empty"
 
-moduleHtmlQuery (_, r:_) = "package:" <> resultPackage r <> " module:" <> resultModule r
-moduleHtmlQuery (_, []) = error "moduleHtmlQuery: empty"
+moduleHtmlQuery :: Text -> ModuleResult -> TS.Text
+moduleHtmlQuery q (_, r:_) = resultPackage r <> "/" <> resultModule r <> "/" <> (cs q)
+moduleHtmlQuery _ (_, []) = error "moduleHtmlQuery: empty"
 
-renderModule :: ModuleResult -> Hamlet.HtmlUrl Routes
-renderModule m = [Hamlet.hamlet|
+renderModule :: Text -> ModuleResult -> Hamlet.HtmlUrl Routes
+renderModule q m = [Hamlet.hamlet|
 <div .panel-heading>
     <ol .breadcrumb>
         $forall (url, part) <- (breadcrump m)
@@ -276,15 +282,15 @@ renderModule m = [Hamlet.hamlet|
 <div .panel-body id="#{moduleHtmlId m}">
     $forall r <- (snd m)
         ^{renderResult r}
-    <button type="button" href="#" .btn .btn-default .btn-xs onclick="fillModule('#{moduleHtmlId m}','#{moduleHtmlQuery m}')">
+    <button type="button" href="#" .btn .btn-default .btn-xs onclick="fillModule('#{moduleHtmlId m}','#{moduleHtmlQuery q m}')">
         show more...
 |]
 
-renderPackage :: PackageResult ->  Hamlet.HtmlUrl Routes
-renderPackage (_,res) = [Hamlet.hamlet|
+renderPackage :: Text -> PackageResult ->  Hamlet.HtmlUrl Routes
+renderPackage q (_,res) = [Hamlet.hamlet|
 <div .panel .panel-default>
     $forall m <- res
-        ^{renderModule m}
+        ^{renderModule q m}
 
 |]
 
@@ -330,7 +336,7 @@ renderPagination query' lr = [Hamlet.hamlet|
 renderMergedLimitedResults :: Text -> Api.LimitedResult PackageResult -> Hamlet.HtmlUrl Routes
 renderMergedLimitedResults query' lr = [Hamlet.hamlet|
 $forall result <- Api.lrResult lr
-    ^{renderPackage result}
+    ^{renderPackage query' result}
 ^{renderPagination query' lr}
 |]
 

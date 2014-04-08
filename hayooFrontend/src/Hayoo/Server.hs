@@ -33,8 +33,6 @@ import Hunt.Server.Client (newServerAndManager, LimitedResult)
 
 import Paths_hayooFrontend
 
-type HayooAction = Scotty.ActionT HayooException HayooServer
-
 start :: HayooConfiguration -> IO ()
 start config = do
     sm <- newServerAndManager $ T.pack $ huntUrl config
@@ -57,8 +55,10 @@ dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
     Scotty.get "/"       $ (controlGroupedResults)
     Scotty.get "/json"   $ (controlSimpleResults Scotty.json)
-    Scotty.get "/ajax"   $ (controlSimpleResults (Scotty.html . Templates.ajax . Templates.renderResults))
+--    Scotty.get "/ajax"   $ (controlSimpleResults (Scotty.html . Templates.ajax . Templates.renderResults))
     Scotty.get "/simple" $ (controlSimpleHtmlResults)
+    Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
+    Scotty.get "/ajax/:package/:module/:query"   $ controlAjaxResults
 
     Scotty.get "/hayoo.js" $ do
         Scotty.setHeader "Content-Type" "text/javascript"
@@ -68,22 +68,23 @@ dispatcher = do
         Scotty.setHeader "Content-Type" "text/css"
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
-    Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Boxed Templates.examples
-    Scotty.get "/about" $ Scotty.html $ Templates.body "" Boxed Templates.about
+    Scotty.get "/about" $ Scotty.html $ Templates.body "" Boxed Templates.about 
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
 handleAutocomplete = do 
     q <- Scotty.param "term"
-    value <- (raiseExeptions $ autocomplete $ q) -- >>= raiseOnLeft
+    value <- autocomplete q
     Scotty.json value
 
-getPage :: [Scotty.Param] -> Int
-getPage params = maybe 0 id $ do
-    page <- lookup "page" params
-    page' <- readMaybe $ cs page
-    return page'
+getPage :: HayooAction Int
+getPage = do
+    params <- Scotty.params 
+    return $ maybe 0 id $ do
+        page <- lookup "page" params
+        page' <- readMaybe $ cs page
+        return page'
 
 controlGroupedResults :: HayooAction ()
 controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.body "" Boxed Templates.mainPage) handleException 
@@ -91,6 +92,15 @@ controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.bo
     renderMerged q results = Scotty.html $ Templates.body (cs q) Boxed $ Templates.renderMergedLimitedResults (cs q) mergedResults
         where
         mergedResults = mergeResults `convertResults` results
+
+controlAjaxResults :: HayooAction ()
+controlAjaxResults = do
+    package <- Scotty.param "package"
+    m' <- Scotty.param "module"
+    query <- Scotty.param "query"
+    page <- getPage
+    results <- queryMore package m' query page
+    Scotty.html $ Templates.ajax $ Templates.renderResults results
 
 controlSimpleHtmlResults :: HayooAction ()
 controlSimpleHtmlResults = controlResults render def handleException 
@@ -105,10 +115,11 @@ controlSimpleResults repr = controlResults (\_ -> repr) (Scotty.raise "invalid A
 controlResults :: (TL.Text -> LimitedResult SearchResult -> HayooAction ()) -> HayooAction () -> (TL.Text -> HayooException -> HayooAction ()) -> HayooAction ()
 controlResults repr emptyRepr exceptionHandler = do
     params <- Scotty.params
+    page <- getPage
     case lookup "query" params of
         (Just q) -> do
-            let page = getPage params
-            ((raiseExeptions $ query (cs q) page) >>= repr (cs q)) `Scotty.rescue`  exceptionHandler (cs q)
+            let 
+            ((query (cs q) page) >>= repr (cs q)) `Scotty.rescue`  exceptionHandler (cs q)
         Nothing -> emptyRepr
     
 
