@@ -25,7 +25,7 @@ library
   exposed-modules:   Hayoo.ParseSignature  
   -- other-modules:       
   -- other-extensions:    
-  build-depends:         base >=4.6 && <4.7
+  build-depends:         base >=4.6 && <4.8
                        , mtl            >= 2.1
                        , parsec         >= 3.1
 
