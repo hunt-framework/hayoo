@@ -44,7 +44,7 @@ executable hayooFrontend
                      , http-types     >= 0.8 && < 0.9
                      , hunt-client
                      , hunt-searchengine
-                     , hslogger       >= 1.2   && < 1.3
+                     , hslogger       >= 1.1   && < 1.3
                      , lens           >= 3.10
                      , lifted-base    >= 0.2   && < 1
                      , monad-control  >= 0.3   && < 0.4

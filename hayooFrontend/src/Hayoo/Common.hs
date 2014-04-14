@@ -55,12 +55,12 @@ import           Control.Monad.Trans.Control (MonadBaseControl, StM, liftBaseWit
 import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT,)
 
 import           Data.Aeson
-import           Data.ByteString.Lazy (ByteString)
+-- import           Data.ByteString.Lazy (ByteString)
 import           Data.Data (Data)
-import           Data.Function (on)
+-- import           Data.Function (on)
 
-import           Data.List (groupBy, partition, find)
-import           Data.Map (Map, fromList)
+import           Data.List (partition) -- , groupBy, find
+-- import           Data.Map (Map, fromList)
 import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
@@ -296,9 +296,6 @@ modName = "HayooFrontend"
 type ModuleResult = (Maybe SearchResult, [SearchResult])
 type PackageResult = (Maybe SearchResult, [ModuleResult])
 
-extract :: ResultType -> [SearchResult] -> ([SearchResult], [SearchResult])
-extract t = partition (\sr -> t == resultType sr)
-
 
 -- | /O(n^2)/. An alternative implementaion would be something like groupBy $ stableSortBy 
 stablePartitionBy :: (a -> a -> Bool) -> [a] -> [[a]]
@@ -307,20 +304,28 @@ stablePartitionBy f (x:xs) = (x : xsIn) : stablePartitionBy f xsOut
     where 
     (xsIn, xsOut) = partition (f x) xs
 
-
 mergeResults :: [SearchResult] -> [PackageResult]
-mergeResults srs = packageResults'
-    where
-    (packages,rest') = extract Package srs
-    (modules, rest)  = extract Module rest'
-    moduleResults :: [[SearchResult]]
-    moduleResults    = stablePartitionBy ((==) `on` resultModule) rest
-    moduleResults' :: [ModuleResult]
-    moduleResults'   = (\srs' -> (find (\ mr -> resultModule mr == (resultModule $ head srs')) modules, srs')) <$> moduleResults
-    packageResults :: [[ModuleResult]]
-    packageResults   = stablePartitionBy ((==) `on` (resultPackage . head . snd)) moduleResults'
-    packageResults' :: [PackageResult]
-    packageResults'  = (\srs' -> (find (\ mr -> resultPackage mr == (resultPackage $ head $ snd $ head srs')) modules, srs')) <$> packageResults
+mergeResults [] = []
+mergeResults (x:xs) 
+    | resultType x == Package = (Just x, mergeModules moduleResults) : mergeResults rest
+    | not $ null packages     = mergeResults $ packages ++ (x:rest')
+    | otherwise               = (Nothing,  mergeModules moduleResults') : mergeResults rest''
+        where
+        (moduleResults,rest)    = partition (\r -> (resultType x /= Package) && (resultName x) == (resultPackage r)) xs
+        (packages,rest')        = partition (\r -> (resultType x == Package) && (resultPackage x) == (resultName r)) xs
+        (moduleResults',rest'') = partition (\r -> (resultType x /= Package) && (resultPackage x) == (resultPackage r)) xs
+
+
+mergeModules :: [SearchResult] -> [ModuleResult]
+mergeModules [] = []
+mergeModules (x:xs) 
+    | resultType x == Module  = (Just x, results) : mergeModules rest
+    | not $ null modules      = mergeModules $ modules ++ (x:rest')
+    | otherwise               = (Nothing,  results') : mergeModules rest''
+        where
+        (results,rest)          = partition (\r -> (resultType x /= Module) && (resultName x) == (resultModule r)) xs
+        (modules,rest')         = partition (\r -> (resultType x == Module) && (resultModule x) == (resultName r)) xs
+        (results',rest'')       = partition (\r -> (resultType x /= Module) && (resultModule x) == (resultModule r)) xs
 
 convertResults :: ([a] -> [b]) -> H.LimitedResult a -> H.LimitedResult b
 convertResults f (H.LimitedResult r x y z) = H.LimitedResult (f r) x y z 

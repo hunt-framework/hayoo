@@ -262,14 +262,20 @@ breadcrump (_, r:_) = [
         (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
         (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
     ]
+breadcrump (Just r, _) = [
+        (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
+        (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
+    ]
 breadcrump (_, []) = error "breadcrump: empty"
 
 moduleHtmlId :: ModuleResult -> TS.Text
 moduleHtmlId (_, r:_) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
+moduleHtmlId (Just r, _) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
 moduleHtmlId (_, []) = error "moduleHtmlId: empty"
 
 moduleHtmlQuery :: Text -> ModuleResult -> TS.Text
 moduleHtmlQuery q (_, r:_) = resultPackage r <> "/" <> resultModule r <> "/" <> (cs q)
+moduleHtmlQuery q (Just r, _) = resultPackage r <> "/" <> resultModule r <> "/" <> (cs q)
 moduleHtmlQuery _ (_, []) = error "moduleHtmlQuery: empty"
 
 renderModule :: Text -> ModuleResult -> Hamlet.HtmlUrl Routes
@@ -287,6 +293,22 @@ renderModule q m = [Hamlet.hamlet|
 |]
 
 renderPackage :: Text -> PackageResult ->  Hamlet.HtmlUrl Routes
+renderPackage q (Just res, []) = [Hamlet.hamlet|
+<div .panel .panel-default>
+    <div .panel-heading>
+        <ol .breadcrumb>
+            <li>
+                <a href="#{url}">#{resultName res}
+    <div .panel-body>
+        #{resultSynopsis res}
+        <!--<button type="button" href="#" .btn .btn-default .btn-xs onclick="fillPackage('#{moduleHtmlId m}','#{moduleHtmlQuery q m}')">
+            show more...-->
+
+|]
+    where
+    url :: Text
+    url = urlQ0 ("package:" <> (resultName res))
+
 renderPackage q (_,res) = [Hamlet.hamlet|
 <div .panel .panel-default>
     $forall m <- res
@@ -335,10 +357,14 @@ renderPagination query' lr = [Hamlet.hamlet|
 
 renderMergedLimitedResults :: Text -> Api.LimitedResult PackageResult -> Hamlet.HtmlUrl Routes
 renderMergedLimitedResults query' lr = [Hamlet.hamlet|
-$forall result <- Api.lrResult lr
-    ^{renderPackage query' result}
+$if null (Api.lrResult lr)
+    <p>No results.
+$else
+    $forall result <- Api.lrResult lr
+        ^{renderPackage query' result}
 ^{renderPagination query' lr}
 |]
+
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|
