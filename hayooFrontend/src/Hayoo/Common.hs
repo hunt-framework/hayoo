@@ -309,11 +309,11 @@ mergeResults [] = []
 mergeResults (x:xs) 
     | resultType x == Package = (Just x, mergeModules moduleResults) : mergeResults rest
     | not $ null packages     = mergeResults $ packages ++ (x:rest')
-    | otherwise               = (Nothing,  mergeModules moduleResults') : mergeResults rest''
+    | otherwise               = (Nothing,  mergeModules $ x:moduleResults') : mergeResults rest''
         where
-        (moduleResults,rest)    = partition (\r -> (resultType x /= Package) && (resultName x) == (resultPackage r)) xs
-        (packages,rest')        = partition (\r -> (resultType x == Package) && (resultPackage x) == (resultName r)) xs
-        (moduleResults',rest'') = partition (\r -> (resultType x /= Package) && (resultPackage x) == (resultPackage r)) xs
+        (moduleResults,rest)    = partition (\r -> (resultType r /= Package) && (resultName x)    == (resultPackage r)) xs
+        (packages,rest')        = partition (\r -> (resultType r == Package) && (resultPackage x) == (resultName r)) xs
+        (moduleResults',rest'') = partition (\r -> (resultType r /= Package) && (resultPackage x) == (resultPackage r)) xs
 
 
 mergeModules :: [SearchResult] -> [ModuleResult]
@@ -321,10 +321,10 @@ mergeModules [] = []
 mergeModules (x:xs) 
     | resultType x == Module  = (Just x, results) : mergeModules rest
     | not $ null modules      = mergeModules $ modules ++ (x:rest')
-    | otherwise               = (Nothing,  results') : mergeModules rest''
+    | otherwise               = (Nothing,  x:results') : mergeModules rest''
         where
-        (results,rest)          = partition (\r -> (resultType x /= Module) && (resultName x) == (resultModule r)) xs
-        (modules,rest')         = partition (\r -> (resultType x == Module) && (resultModule x) == (resultName r)) xs
+        (results,rest)          = partition (\r -> (resultType x /= Module) && (resultModule x) == (resultModule r)) xs
+        (modules,rest')         = partition (\r -> (resultType x == Module) && (resultModule x) == (resultModule r)) xs
         (results',rest'')       = partition (\r -> (resultType x /= Module) && (resultModule x) == (resultModule r)) xs
 
 convertResults :: ([a] -> [b]) -> H.LimitedResult a -> H.LimitedResult b
