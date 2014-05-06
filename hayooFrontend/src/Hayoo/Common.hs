@@ -46,8 +46,6 @@ import           Control.Applicative (Applicative)
 import           Control.Exception (Exception)
 import           Control.Exception.Lifted (catches, Handler (..))
 import           Control.Failure (Failure, failure)
-
-import           Control.Applicative ((<$>))
 import           Control.Monad.Base (MonadBase, liftBase, liftBaseDefault)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
@@ -55,35 +53,26 @@ import           Control.Monad.Trans.Control (MonadBaseControl, StM, liftBaseWit
 import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT,)
 
 import           Data.Aeson
--- import           Data.ByteString.Lazy (ByteString)
 import           Data.Data (Data)
--- import           Data.Function (on)
-
-import           Data.List (partition) -- , groupBy, find
--- import           Data.Map (Map, fromList)
+import           Data.List (partition)
+import           Data.Scientific (Scientific)
 import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
 import           Data.Typeable (Typeable)
 import           Data.Vector ((!))
 
-import           Network.HTTP.Conduit (HttpException)
+import qualified Hunt.Server.Client as H
+import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
+import           Hunt.Query.Language.Parser (parseQuery)
 
-#if MIN_VERSION_aeson(0,7,0)
-import           Data.Scientific (Scientific)
-#else
-import           Data.Attoparsec.Number (Number (D))
-#endif
+import           Network.HTTP.Conduit (HttpException)
 
 import qualified System.Log.Logger as Log (debugM)
 
 import           Text.Parsec (ParseError)
 
 import qualified Web.Scotty.Trans as Scotty
-
-import qualified Hunt.Server.Client as H
-import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
-import           Hunt.Query.Language.Parser (parseQuery)
 
 import           Hayoo.ParseSignature
 

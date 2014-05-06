@@ -12,6 +12,8 @@ import           Data.String.Conversions (cs)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
+import           Hunt.Server.Client (newServerAndManager, LimitedResult)
+
 import           Network.HTTP.Types.Status (internalServerError500)
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import qualified Network.Wai.Handler.Warp as W
@@ -26,12 +28,9 @@ import           Text.Read (readMaybe)
 
 import qualified Web.Scotty.Trans as Scotty
 
+import           Hayoo.Common
 import qualified Hayoo.Templates as Templates
-
-import Hayoo.Common
-import Hunt.Server.Client (newServerAndManager, LimitedResult)
-
-import Paths_hayooFrontend
+import           Paths_hayooFrontend
 
 start :: HayooConfiguration -> IO ()
 start config = do

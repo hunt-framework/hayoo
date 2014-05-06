@@ -5,10 +5,10 @@
 
 module Hayoo.Templates where
 
-import           Control.Applicative ((<$>))
+-- import           Control.Applicative ((<$>))
 import           Control.Lens
 
-import           Data.Map (Map, toList)
+-- import           Data.Map (Map, toList)
 import           Data.Monoid (mconcat)
 
 import           Data.String.Conversions (cs, (<>), ConvertibleStrings)
@@ -16,15 +16,15 @@ import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
 
+import qualified Hunt.Server.Client as Api
+
 import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 
-import Network.HTTP.Types (renderQuery, simpleQueryToQuery, SimpleQuery, Query)
+import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
 
-import Hayoo.Common
-import qualified Hunt.Server.Client as Api
-
+import           Hayoo.Common
 
 data Routes = Home | Simple | HayooJs | HayooCSS | Autocomplete | Examples | About
 
@@ -299,7 +299,7 @@ renderPackage q (Just res, []) = [Hamlet.hamlet|
     <div .panel-heading>
         <ol .breadcrumb>
             <li>
-                <a href="#{url}">#{resultName res}
+                <a href="#{url'}">#{resultName res}
     <div .panel-body>
         #{resultSynopsis res}
         <!--<button type="button" href="#" .btn .btn-default .btn-xs onclick="fillPackage('#{moduleHtmlId m}','#{moduleHtmlQuery q m}')">
@@ -307,8 +307,8 @@ renderPackage q (Just res, []) = [Hamlet.hamlet|
 
 |]
     where
-    url :: Text
-    url = urlQ0 ("package:" <> (resultName res))
+    url' :: Text
+    url' = urlQ0 ("package:" <> (resultName res))
 
 renderPackage q (_,res) = [Hamlet.hamlet|
 <div .panel .panel-default>
