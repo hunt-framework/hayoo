@@ -26,11 +26,12 @@ library
                      Hayoo.Url
   -- other-modules:       
   -- other-extensions:    
-  build-depends:         base >=4.6 && <4.8
-                       , http-types  >= 0.8
+
+  build-depends:         base               >= 4.6 && < 5
+                       , http-types         >= 0.8
                        , hunt-searchengine
-                       , mtl            >= 2.1
-                       , parsec         >= 3.1
+                       , mtl                >= 2.1
+                       , parsec             >= 3.1
                        , string-conversions >= 0.3
                        , text
 
