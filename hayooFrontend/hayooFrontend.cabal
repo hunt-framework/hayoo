@@ -34,6 +34,7 @@ executable hayooFrontend
                      , aeson          >= 0.6
                      , attoparsec     >= 0.10
                      , blaze-html     >= 0.6   && < 0.8
+                     , blaze-markup   >= 0.6
                      , bytestring     >= 0.10
                      , cmdargs        >= 0.10
                      , containers     >= 0.5
