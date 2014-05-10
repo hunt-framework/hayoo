@@ -455,7 +455,7 @@ examples = [Hamlet.hamlet|
             <a href="@{Home}?query=mapM%20OR%20foldM">MapM or foldM
             searches will give a list of either MapM or foldM
         <p>
-            <a href="@{Home}?query=map%20BUT%20package%3Abase">map BUT package:base
+            <a href="@{Home}?query=map%20AND%20NOT%20package%3Abase">map AND NOT package:base
             searches for map, except for everything in the package base
 <div .panel .panel-default>
     <div .panel-heading>
