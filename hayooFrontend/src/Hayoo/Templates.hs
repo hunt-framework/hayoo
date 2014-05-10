@@ -20,6 +20,7 @@ import qualified Hunt.Server.Client as Api
 
 import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
+import           Text.Blaze (preEscapedToMarkup)
 
 import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
@@ -194,7 +195,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
         <p>
             #{resultPackage result} - #{resultModule result}
         <p .description .more>
-            #{resultDescription result}
+            #{preEscapedToMarkup $ resultDescription result}
 |]
 
 renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
@@ -222,7 +223,7 @@ renderResult r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
     <span .label .label-default>
         Class Method
 <p .description .more>
-    #{resultDescription r}
+    #{preEscapedToMarkup $ resultDescription r}
 |]
 
 renderResult r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
@@ -231,7 +232,7 @@ renderResult r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
         #{resultName r}
     :: #{resultSignature r}
 <p .description .more>
-    #{resultDescription r}
+    #{preEscapedToMarkup $ resultDescription r}
 |]
 
 renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
@@ -240,7 +241,7 @@ renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
 <p .description .more>
-    #{resultDescription r}
+    #{preEscapedToMarkup $ resultDescription r}
 |]
 
 renderResult r@(PackageResult {}) = [Hamlet.hamlet|

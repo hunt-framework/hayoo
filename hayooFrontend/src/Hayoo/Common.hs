@@ -60,7 +60,7 @@ import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
 import           Data.Text (Text, isInfixOf)
 import           Data.Typeable (Typeable)
-import           Data.Vector ((!))
+--import           Data.Vector ((!))
 
 import qualified Hunt.Server.Client as H
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
@@ -89,9 +89,9 @@ instance ToJSON ResultType where
 data SearchResult =
     NonPackageResult {
 #if MIN_VERSION_aeson(0,7,0)    
-        resultRank :: Scientific,
+        resultScore :: Scientific,
 #else
-        resultRank :: Double,
+        resultScore :: Double,
 #endif
         resultUri :: Text, 
         resultPackage :: Text,
@@ -104,9 +104,9 @@ data SearchResult =
     }
     | PackageResult {
 #if MIN_VERSION_aeson(0,7,0)    
-        resultRank :: Scientific,
+        resultScore :: Scientific,
 #else
-        resultRank :: Double,
+        resultScore :: Double,
 #endif
         resultUri :: Text,  
         resultName :: Text,
@@ -119,27 +119,28 @@ data SearchResult =
     }  deriving (Show, Eq, Generic)
 
 
-parsePackageResult rank descr baseUri n = do
+parsePackageResult score descr baseUri n = do
     dep <- descr .:? "dependencies" .!= ""
     m  <- descr .:? "maintainer" .!= ""
     s  <- descr .:? "synopsis" .!= ""
     a  <- descr .:? "author" .!= ""
     cat  <- descr .:? "category" .!= ""
 --    u <- baseUri -- unparsedUri
-    return $ PackageResult rank baseUri n dep m s a cat Package
+    return $ PackageResult score baseUri n dep m s a cat Package
 
-parseNonPackageResult rank descr baseUri n d t = do
+parseNonPackageResult score descr baseUri n d t = do
     p  <- descr .:? "package" .!= "unknown"
     m  <- descr .:? "module" .!= "Unknown"
     s  <- descr .:? "signature" .!= ""
     c  <- descr .:? "source" .!= ""
 --    u <- baseUri -- unparsedUri
-    return $ NonPackageResult rank  baseUri p m n s d c t 
+    return $ NonPackageResult score  baseUri p m n s d c t 
 
 -- Partial Type Signature
 -- parseSearchResult :: Double -> Value -> _
-parseSearchResult rank (Object v) = do
+parseSearchResult (Object v) = do
     (Object descr) <- v .: "description" -- This is always succesful. (as of january 2014)
+    (Number score) <- v .:? "score" .!= (Number 1.0)
     baseUri <- v .: "uri"
     -- unparsedUri <- descr
     
@@ -147,20 +148,13 @@ parseSearchResult rank (Object v) = do
     d <- descr .:? "description" .!= ""
     t <- descr .:? "type" .!= Unknown
     case t of
-        Package -> parsePackageResult rank descr baseUri n
-        _       -> parseNonPackageResult rank descr baseUri n d t
-parseSearchResult _ _ = fail "parseSearchResult: expected Object"
+        Package -> parsePackageResult score descr baseUri n
+        _       -> parseNonPackageResult score descr baseUri n d t
+parseSearchResult _ = fail "parseSearchResult: expected Object"
 
 instance FromJSON SearchResult where
-    parseJSON (Array v) = do
-#if MIN_VERSION_aeson(0,7,0)    
-        let (Number rank) = v ! 1
-#else
-        let (Number (D rank)) = v ! 1
-#endif
-            o = v ! 0
-        parseSearchResult rank o
-    parseJSON _ = fail "FromJSON SearchResult: Expected Tuple (Array) for SearchResult"
+    parseJSON o = parseSearchResult o
+--    parseJSON _ = fail "FromJSON SearchResult: Expected Tuple (Array) for SearchResult"
 
 instance ToJSON SearchResult where
 
