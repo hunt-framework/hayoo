@@ -43,9 +43,9 @@ module Hayoo.Common
 import           GHC.Generics (Generic)
 
 import           Control.Applicative (Applicative)
-import           Control.Exception (Exception)
+import           Control.Exception (Exception, throwIO)
 import           Control.Exception.Lifted (catches, Handler (..))
-import           Control.Failure (Failure, failure)
+--import           Control.Failure (Failure, failure)
 import           Control.Monad.Base (MonadBase, liftBase, liftBaseDefault)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
@@ -215,7 +215,7 @@ withServerAndManager' x = do
 
 -- ------------------------
 
-handleSignatureQuery :: (Monad m, Failure HayooException m, MonadIO m) => Text -> m Query
+handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m Query
 handleSignatureQuery q
     | "->" `isInfixOf` q = do
         s <- sig
@@ -229,10 +229,10 @@ handleSignatureQuery q
                     q1 = QContext ["signature"] $ QWord QCase (cs $ prettySignature s)
                     q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
                     sigQ = QBinary Or q1 q2
-            (Left err) -> failure $ ParseError err
+            (Left err) -> liftIO $ throwIO $ ParseError err
         normalQuery = case parseQuery (cs q) of 
             (Right q') -> return q'
-            (Left err) -> failure $ StringException err
+            (Left err) -> liftIO $ throwIO $ StringException err
 
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
