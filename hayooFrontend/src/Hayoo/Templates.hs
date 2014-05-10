@@ -206,12 +206,11 @@ renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
 |]
 
 renderBoxedResults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
-renderBoxedResults r = error $ show $ Api.lrResult r
-{-renderBoxedResults results = [Hamlet.hamlet|
+--renderBoxedResults r = error $ show $ Api.lrResult r
+renderBoxedResults results = [Hamlet.hamlet|
 $forall r <- Api.lrResult results
     ^{renderBoxedResult r}
 |]
--}
 -- -------------------------------------
 
 renderResult :: SearchResult -> Hamlet.HtmlUrl Routes

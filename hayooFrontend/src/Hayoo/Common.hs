@@ -139,7 +139,7 @@ parseNonPackageResult rank descr baseUri n d t = do
 -- Partial Type Signature
 -- parseSearchResult :: Double -> Value -> _
 parseSearchResult rank (Object v) = do
-    (Object descr) <- v .: "desc" -- This is always succesful. (as of january 2014)
+    (Object descr) <- v .: "description" -- This is always succesful. (as of january 2014)
     baseUri <- v .: "uri"
     -- unparsedUri <- descr
     
