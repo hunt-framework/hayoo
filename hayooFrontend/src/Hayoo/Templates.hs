@@ -114,7 +114,7 @@ navigation q = [Hamlet.hamlet|
 
 footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
-<footer>
+<footer id="footer">
     <a href=@{Home}> Hayoo Frontend
     &copy; 2014 Sebastian Philipp | Powered by 
     <a href="https://github.com/hunt-framework/hunt">
@@ -151,6 +151,7 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.haml
     :: #{resultSignature r}
     <span .label .label-default>
         Class Method
+    ^{renderDropdown r}
 |]
 
 renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
@@ -158,6 +159,7 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.ha
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
+    ^{renderDropdown r}
 |]
 
 renderBoxedResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
