@@ -61,7 +61,7 @@ import           Data.Typeable (Typeable)
 
 import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
-import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
+import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..), printQuery)
 import           Hunt.Query.Language.Parser (parseQuery)
 
 import           Network.HTTP.Conduit (HttpException)
@@ -244,38 +244,6 @@ query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
     q' <- handleSignatureQuery q
     withServerAndManager' $ H.evalQuery q' (p * 20)
-
-
--- ---------------------
--- TODO. move to Hunt
-
-printQuery :: Query -> Text
-printQuery (QWord QNoCase w)  = w  -- BUG: escape Whitespace
-printQuery (QWord QCase w)    = "!" <> w
-printQuery (QWord QFuzzy w)   = "~" <> w
-
-printQuery (QPhrase _ w)      = "\"" <> w <> "\""
-
-printQuery (QContext cs' w)    = printCs <> ":" <> (printQPar w)
-    where
-    printCs = foldr1 (\l r -> l <> "," <> r) cs'
-
-printQuery (QBinary o l r)   = (printQPar l) <> (printOp o) <> (printQPar r)
-    where
-    printOp And = " AND "
-    printOp Or = " OR "
-    printOp AndNot = " AND NOT "
-
-printQuery (QBoost w q) = (printQPar q) <> "^" <> (cs $ show w)
-
-printQuery (QRange l u) = "[" <> l <> " TO " <> u <> "]"
-
-printQPar :: Query -> Text
-printQPar q@QWord{}  = printQuery q
-printQPar q@QPhrase{} = printQuery q
-printQPar q@QRange{} = printQuery q
-printQPar q = "(" <> (printQuery q) <> ")"
-
 
 -- ------------------------------
 data ContextQuery

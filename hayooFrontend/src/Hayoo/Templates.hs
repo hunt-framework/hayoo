@@ -116,7 +116,9 @@ footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
 <footer>
     <a href=@{Home}> Hayoo Frontend
-    &copy; 2014 Sebastian Philipp
+    &copy; 2014 Sebastian Philipp | Powered by 
+    <a href="https://github.com/hunt-framework/hunt">
+        Hunt
 |]
 
 body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
