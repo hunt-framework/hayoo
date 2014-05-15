@@ -119,6 +119,9 @@ footer = [Hamlet.hamlet|
     &copy; 2014 Sebastian Philipp | Powered by 
     <a href="https://github.com/hunt-framework/hunt">
         Hunt
+    |
+    <a href="https://github.com/hunt-framework/hayoo">
+        Github
 |]
 
 body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
