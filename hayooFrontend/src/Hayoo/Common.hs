@@ -28,21 +28,18 @@ module Hayoo.Common
 , runHayooReader'
 , autocomplete
 , query
-, queryMore
 , HayooConfiguration (..)
--- ----
-, stablePartitionBy
-, mergeResults
-, ModuleResult
-, PackageResult
-, convertResults
--- --------
-, DisplayType (..)
+-- -------
+, printQuery
+, contextQueryToQuery
+, contextQueryName
+, ContextQuery ()
+, contextQueries
 ) where
 
 import           GHC.Generics (Generic)
 
-import           Control.Applicative (Applicative)
+import           Control.Applicative (Applicative, (<$>), (<*>), liftA2)
 import           Control.Exception (Exception, throwIO)
 import           Control.Exception.Lifted (catches, Handler (..))
 --import           Control.Failure (Failure, failure)
@@ -62,6 +59,7 @@ import           Data.Text (Text, isInfixOf)
 import           Data.Typeable (Typeable)
 --import           Data.Vector ((!))
 
+import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..))
 import           Hunt.Query.Language.Parser (parseQuery)
@@ -118,6 +116,9 @@ data SearchResult =
         resultType :: ResultType
     }  deriving (Show, Eq, Generic)
 
+getSRPackage :: SearchResult -> Text
+getSRPackage sr@NonPackageResult{} = resultPackage sr
+getSRPackage sr@PackageResult{} = resultName sr
 
 parsePackageResult score descr baseUri n = do
     dep <- descr .:? "dependencies" .!= ""
@@ -244,14 +245,74 @@ query q p = raiseExeptions $ do
     q' <- handleSignatureQuery q
     withServerAndManager' $ H.evalQuery q' (p * 20)
 
-queryMore :: Text -> Text -> Text -> Int -> HayooAction (H.LimitedResult SearchResult)
-queryMore package m' q p = raiseExeptions $ do
-    q' <- handleSignatureQuery q
-    let qq = foldr1 (QBinary And) [q', qm, qp]
-    withServerAndManager' $ H.evalQuery qq (p * 20) 
+
+-- ---------------------
+-- TODO. move to Hunt
+
+printQuery :: Query -> Text
+printQuery (QWord QNoCase w)  = w  -- BUG: escape Whitespace
+printQuery (QWord QCase w)    = "!" <> w
+printQuery (QWord QFuzzy w)   = "~" <> w
+
+printQuery (QPhrase _ w)      = "\"" <> w <> "\""
+
+printQuery (QContext cs' w)    = printCs <> ":" <> (printQPar w)
     where
-    qp = QContext ["package"] $ QWord QCase package
-    qm = QContext ["module"] $ QWord QCase m'    
+    printCs = foldr1 (\l r -> l <> "," <> r) cs'
+
+printQuery (QBinary o l r)   = (printQPar l) <> (printOp o) <> (printQPar r)
+    where
+    printOp And = " AND "
+    printOp Or = " OR "
+    printOp AndNot = " AND NOT "
+
+printQuery (QBoost w q) = (printQPar q) <> "^" <> (cs $ show w)
+
+printQuery (QRange l u) = "[" <> l <> " TO " <> u <> "]"
+
+printQPar :: Query -> Text
+printQPar q@QWord{}  = printQuery q
+printQPar q@QPhrase{} = printQuery q
+printQPar q@QRange{} = printQuery q
+printQPar q = "(" <> (printQuery q) <> ")"
+
+
+-- ------------------------------
+data ContextQuery
+    = QueryReverseDependencies
+    | QueryPackageModules
+    | QueryPackageDatatypes
+    | QueryPackageByAuthor
+    | QueryModuleContent
+    deriving (Show)
+
+contextQueryToQuery :: ContextQuery -> SearchResult -> Query
+contextQueryToQuery (QueryReverseDependencies) sr = mkContext "dependencies" $ getSRPackage sr
+contextQueryToQuery (QueryPackageModules)      sr = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "type" "module")
+contextQueryToQuery (QueryPackageDatatypes)    sr = QBinary And (mkContext "package" $ getSRPackage sr) (foldr1 (QBinary Or) $ (mkContext "type") <$> ["data", "newtype", "type"])
+contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = mkContext "author" $ resultAuthor sr
+contextQueryToQuery (QueryPackageByAuthor)     _ = error "contextQueryToQuery: QueryPackageByAuthor: no package"
+contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "module" $ resultModule sr)
+contextQueryToQuery (QueryModuleContent)       _ = error "contextQueryToQuery: QueryModuleContent: package"
+
+contextQueryName :: ContextQuery -> Text
+contextQueryName QueryReverseDependencies = "Reverse Dependencies"
+contextQueryName QueryPackageModules = "Package Modules"
+contextQueryName QueryPackageDatatypes = "Data types"
+contextQueryName QueryPackageByAuthor = "Packages by same author"
+contextQueryName QueryModuleContent = "Module content"
+
+contextQueries :: SearchResult -> [ContextQuery]
+contextQueries sr
+    | (resultType sr) == Package = [QueryReverseDependencies, QueryPackageModules, QueryPackageDatatypes, QueryPackageByAuthor]
+    | (resultType sr) == Module  = [QueryModuleContent]
+    | otherwise                  = []
+
+
+mkContext :: Context -> Text -> Query
+mkContext c w = QContext [c] $ QWord QCase w
+
+-- ---------------------
 
 raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a
 raiseExeptions x = do
@@ -274,45 +335,5 @@ data HayooConfiguration = HayooConfiguration {
 modName :: String
 modName = "HayooFrontend"
 
--- --------------------------
-
-type ModuleResult = (Maybe SearchResult, [SearchResult])
-type PackageResult = (Maybe SearchResult, [ModuleResult])
-
-
--- | /O(n^2)/. An alternative implementaion would be something like groupBy $ stableSortBy 
-stablePartitionBy :: (a -> a -> Bool) -> [a] -> [[a]]
-stablePartitionBy _ [] = []
-stablePartitionBy f (x:xs) = (x : xsIn) : stablePartitionBy f xsOut
-    where 
-    (xsIn, xsOut) = partition (f x) xs
-
-mergeResults :: [SearchResult] -> [PackageResult]
-mergeResults [] = []
-mergeResults (x:xs) 
-    | resultType x == Package = (Just x, mergeModules moduleResults) : mergeResults rest
-    | not $ null packages     = mergeResults $ packages ++ (x:rest')
-    | otherwise               = (Nothing,  mergeModules $ x:moduleResults') : mergeResults rest''
-        where
-        (moduleResults,rest)    = partition (\r -> (resultType r /= Package) && (resultName x)    == (resultPackage r)) xs
-        (packages,rest')        = partition (\r -> (resultType r == Package) && (resultPackage x) == (resultName r)) xs
-        (moduleResults',rest'') = partition (\r -> (resultType r /= Package) && (resultPackage x) == (resultPackage r)) xs
-
-
-mergeModules :: [SearchResult] -> [ModuleResult]
-mergeModules [] = []
-mergeModules (x:xs) 
-    | resultType x == Module  = (Just x, results) : mergeModules rest
-    | not $ null modules      = mergeModules $ modules ++ (x:rest')
-    | otherwise               = (Nothing,  x:results') : mergeModules rest''
-        where
-        (results,rest)          = partition (\r -> (resultType x /= Module) && (resultModule x) == (resultModule r)) xs
-        (modules,rest')         = partition (\r -> (resultType x == Module) && (resultModule x) == (resultModule r)) xs
-        (results',rest'')       = partition (\r -> (resultType x /= Module) && (resultModule x) == (resultModule r)) xs
-
-convertResults :: ([a] -> [b]) -> H.LimitedResult a -> H.LimitedResult b
-convertResults f (H.LimitedResult r x y z) = H.LimitedResult (f r) x y z 
-
 -- -------------------------------
 
-data DisplayType = Grouped | Boxed

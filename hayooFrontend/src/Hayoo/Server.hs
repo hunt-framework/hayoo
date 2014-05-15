@@ -52,12 +52,10 @@ start config = do
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
-    Scotty.get "/"       $ (controlGroupedResults)
+    Scotty.get "/"       $ (controlSimpleHtmlResults)
     Scotty.get "/json"   $ (controlSimpleResults Scotty.json)
---    Scotty.get "/ajax"   $ (controlSimpleResults (Scotty.html . Templates.ajax . Templates.renderResults))
-    Scotty.get "/simple" $ (controlSimpleHtmlResults)
     Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
-    Scotty.get "/ajax/:package/:module/:query"   $ controlAjaxResults
+    Scotty.get "/ajax/:page/" $ controlAjaxResults
 
     Scotty.get "/hayoo.js" $ do
         Scotty.setHeader "Content-Type" "text/javascript"
@@ -67,8 +65,8 @@ dispatcher = do
         Scotty.setHeader "Content-Type" "text/css"
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
-    Scotty.get "/examples" $ Scotty.html $ Templates.body "" Boxed Templates.examples
-    Scotty.get "/about" $ Scotty.html $ Templates.body "" Boxed Templates.about 
+    Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
+    Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about 
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
@@ -85,28 +83,19 @@ getPage = do
         page' <- readMaybe $ cs page
         return page'
 
-controlGroupedResults :: HayooAction ()
-controlGroupedResults  = controlResults renderMerged (Scotty.html $ Templates.body "" Boxed Templates.mainPage) handleException 
-    where
-    renderMerged q results = Scotty.html $ Templates.body (cs q) Boxed $ Templates.renderMergedLimitedResults (cs q) mergedResults
-        where
-        mergedResults = mergeResults `convertResults` results
-
 controlAjaxResults :: HayooAction ()
 controlAjaxResults = do
-    package <- Scotty.param "package"
-    m' <- Scotty.param "module"
-    query <- Scotty.param "query"
     page <- getPage
-    results <- queryMore package m' query page
+    q <- Scotty.param "query"
+    results <- query (q) page
     Scotty.html $ Templates.ajax $ Templates.renderResults results
 
 controlSimpleHtmlResults :: HayooAction ()
 controlSimpleHtmlResults = controlResults render def handleException 
     where
         render :: TL.Text -> LimitedResult SearchResult -> HayooAction ()
-        render q r = Scotty.html $ Templates.body q Grouped (Templates.renderBoxedResults r)
-        def = (Scotty.html $ Templates.body "" Grouped Templates.mainPage)
+        render q r = Scotty.html $ Templates.body q (Templates.renderBoxedResults r)
+        def = (Scotty.html $ Templates.body "" Templates.mainPage)
 
 controlSimpleResults ::  (LimitedResult SearchResult -> HayooAction ()) -> HayooAction ()
 controlSimpleResults repr = controlResults (\_ -> repr) (Scotty.raise "invalid Arguemtent")  (\_ _ -> Scotty.json ([]::[()]))
@@ -126,7 +115,7 @@ controlResults repr emptyRepr exceptionHandler = do
 handleException :: TL.Text -> HayooException -> HayooAction ()
 handleException q e = do
     Scotty.status internalServerError500
-    Scotty.html $ Templates.body q Boxed $ Templates.renderException e
+    Scotty.html $ Templates.body q $ Templates.renderException e
             
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".

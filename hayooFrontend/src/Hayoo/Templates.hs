@@ -65,7 +65,6 @@ renderTitle q
     | T.null q = "Hayoo! Haskell API Search"
     | otherwise = q `T.append` " - Hayoo!"
 
---header :: Blaze.Html
 header :: Text -> Hamlet.HtmlUrl Routes
 header q = [Hamlet.hamlet|
   <head>
@@ -84,8 +83,8 @@ header q = [Hamlet.hamlet|
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 |]
 
-navigation :: Text -> DisplayType -> Hamlet.HtmlUrl Routes
-navigation q t = [Hamlet.hamlet|
+navigation :: Text -> Hamlet.HtmlUrl Routes
+navigation q = [Hamlet.hamlet|
 <div .navbar .navbar-default .navbar-static-top role="navigation">
 
     <div .navbar-header .navbar-left>
@@ -106,8 +105,6 @@ navigation q t = [Hamlet.hamlet|
                     <input .btn .btn-default #submit type="submit" value="Search">
 
         <ul .nav .navbar-nav .navbar-right>
-            <li .active>
-                ^{otherResultType q t}
             <li>
                 <a href=@{Examples}>Examples
             <li>
@@ -122,13 +119,13 @@ footer = [Hamlet.hamlet|
     &copy; 2014 Sebastian Philipp
 |]
 
-body :: Text -> DisplayType -> Hamlet.HtmlUrl Routes -> T.Text 
-body q t content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
+body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
+body q content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
 $doctype 5
 <html lang="en">
     ^{header q}
     <body>
-        ^{navigation q t}
+        ^{navigation q}
         
         <div class="container">
             ^{content}
@@ -141,17 +138,6 @@ mainUri m = m --snd $ head $ toList m
 
 ajax :: Hamlet.HtmlUrl Routes -> T.Text 
 ajax content = T.pack $ Blaze.renderHtml $ content render
-
-otherResultType :: Text -> DisplayType -> Hamlet.HtmlUrl Routes
-otherResultType q Boxed = [Hamlet.hamlet|
-<a href="#{urlQ'L' Simple q 0}">
-    Simple
-|]
-
-otherResultType q Grouped = [Hamlet.hamlet|
-<a href="#{urlQ'L' Home q 0}">
-    Grouped
-|]
 
 -- ---------------------------------
 
@@ -177,6 +163,7 @@ renderBoxedResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
     #{show $ resultType r}
     <a href=#{mainUri $ resultUri r}>
         #{resultName r}
+    ^{renderDropdown r}
 |]
 
 renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
@@ -185,6 +172,7 @@ renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
         #{resultName r}
     <span .label .label-default>
         Package
+    ^{renderDropdown r}
 |]
 
 renderBoxedResult :: SearchResult -> Hamlet.HtmlUrl Routes
@@ -258,64 +246,30 @@ $forall r <- Api.lrResult results
     ^{renderResult r}
 |]
 
-breadcrump :: ModuleResult -> [(TS.Text, TS.Text)]
-breadcrump (_, r:_) = [
-        (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
-        (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
-    ]
-breadcrump (Just r, _) = [
-        (urlQ0 ("package:" <> (resultPackage r)), resultPackage r),
-        (urlQ0 (mconcat ["package:", resultPackage r, " module:", resultModule r]), resultModule r)
-    ]
-breadcrump (_, []) = error "breadcrump: empty"
-
-moduleHtmlId :: ModuleResult -> TS.Text
-moduleHtmlId (_, r:_) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
-moduleHtmlId (Just r, _) = resultPackage r <> "-" <> (TS.replace "." "-" $ resultModule r)
-moduleHtmlId (_, []) = error "moduleHtmlId: empty"
-
-moduleHtmlQuery :: Text -> ModuleResult -> TS.Text
-moduleHtmlQuery q (_, r:_) = resultPackage r <> "/" <> resultModule r <> "/" <> (cs q)
-moduleHtmlQuery q (Just r, _) = resultPackage r <> "/" <> resultModule r <> "/" <> (cs q)
-moduleHtmlQuery _ (_, []) = error "moduleHtmlQuery: empty"
-
-renderModule :: Text -> ModuleResult -> Hamlet.HtmlUrl Routes
-renderModule q m = [Hamlet.hamlet|
-<div .panel-heading>
-    <ol .breadcrumb>
-        $forall (url, part) <- (breadcrump m)
-            <li>
-                <a href="#{url}">#{part}
-<div .panel-body id="#{moduleHtmlId m}">
-    $forall r <- (snd m)
-        ^{renderResult r}
-    <button type="button" href="#" .btn .btn-default .btn-xs onclick="fillModule('#{moduleHtmlId m}','#{moduleHtmlQuery q m}')">
-        show more...
-|]
-
-renderPackage :: Text -> PackageResult ->  Hamlet.HtmlUrl Routes
-renderPackage q (Just res, []) = [Hamlet.hamlet|
-<div .panel .panel-default>
-    <div .panel-heading>
-        <ol .breadcrumb>
-            <li>
-                <a href="#{url'}">#{resultName res}
-    <div .panel-body>
-        #{resultSynopsis res}
-        <!--<button type="button" href="#" .btn .btn-default .btn-xs onclick="fillPackage('#{moduleHtmlId m}','#{moduleHtmlQuery q m}')">
-            show more...-->
-
-|]
+renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
+renderDropdown r = renderDropdown' r qs'
     where
-    url' :: Text
-    url' = urlQ0 ("package:" <> (resultName res))
-
-renderPackage q (_,res) = [Hamlet.hamlet|
-<div .panel .panel-default>
-    $forall m <- res
-        ^{renderModule q m}
+    qs' = contextQueries r
+    renderDropdown' r [] = [Hamlet.hamlet|
+|]
+    renderDropdown' r qs = [Hamlet.hamlet|
+<div .pull-right .dropdown .text-primary id="fat-menu">
+    <a href="#" id="drop3" role="button" .dropdown-toggle data-toggle="dropdown">
+        More<b class="caret"></b>
+        <ul .dropdown-menu role="menu" aria-labelledby="drop3">
+            $forall (n, u) <- namedQueries
+                <li role="presentation">
+                    <a role="menuitem" tabindex="-1" href="#{u}">
+                        #{n}
+        
 
 |]
+        where
+        namedQueries = map (\q -> (contextQueryName q, urlQ'S (printQuery $ contextQueryToQuery q r) 0)) qs
+
+    
+    
+
 
 renderPagination :: Text -> Api.LimitedResult a -> Hamlet.HtmlUrl Routes
 renderPagination query' lr = [Hamlet.hamlet|
@@ -354,18 +308,6 @@ renderPagination query' lr = [Hamlet.hamlet|
         rightArrowPage = (lastPagerPage + 3) `min` lastPage 
         pages = [firstPagerPage .. lastPagerPage]
         
-
-
-renderMergedLimitedResults :: Text -> Api.LimitedResult PackageResult -> Hamlet.HtmlUrl Routes
-renderMergedLimitedResults query' lr = [Hamlet.hamlet|
-$if null (Api.lrResult lr)
-    <p>No results.
-$else
-    $forall result <- Api.lrResult lr
-        ^{renderPackage query' result}
-^{renderPagination query' lr}
-|]
-
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|
