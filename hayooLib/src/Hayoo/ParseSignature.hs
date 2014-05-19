@@ -25,7 +25,7 @@ import Data.Traversable (Traversable, mapM)
 
 import Control.Applicative    ((*>), (<*), (<$>)) -- , (<*>)
 import Control.Monad.Identity (Identity)
-import Control.Monad.State (MonadState, State, runState, get, put)
+import Control.Monad.State (State, runState, get, put)
 
 import Text.Parsec (many1, parse, spaces, (<|>), (<?>), char, alphaNum, string, sepBy, ParsecT, eof, ParseError, try)
 
