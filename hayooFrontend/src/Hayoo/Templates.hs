@@ -194,51 +194,6 @@ renderBoxedResults results = [Hamlet.hamlet|
 $forall r <- Api.lrResult results
     ^{renderBoxedResult r}
 |]
--- -------------------------------------
-
-renderResult :: SearchResult -> Hamlet.HtmlUrl Routes
-renderResult r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
-<p .resultLine>
-    <a href=#{mainUri $ resultUri r}>
-        #{resultName r}
-    :: #{resultSignature r}
-    <span .label .label-default>
-        Class Method
-<p .description .more>
-    #{preEscapedToMarkup $ resultDescription r}
-|]
-
-renderResult r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
-<p .resultLine>
-    <a href=#{mainUri $ resultUri r}>
-        #{resultName r}
-    :: #{resultSignature r}
-<p .description .more>
-    #{preEscapedToMarkup $ resultDescription r}
-|]
-
-renderResult r@(NonPackageResult {}) = [Hamlet.hamlet|
-<p .resultLine>
-    #{show $ resultType r}
-    <a href=#{mainUri $ resultUri r}>
-        #{resultName r}
-<p .description .more>
-    #{preEscapedToMarkup $ resultDescription r}
-|]
-
-renderResult r@(PackageResult {}) = [Hamlet.hamlet|
-<p .resultLine>
-    package
-    <a href=#{mainUri $ resultUri r}>
-        #{resultName r}
-|]
-
-
-renderResults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
-renderResults results = [Hamlet.hamlet|
-$forall r <- Api.lrResult results
-    ^{renderResult r}
-|]
 
 renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
 renderDropdown r = renderDropdown' r qs'

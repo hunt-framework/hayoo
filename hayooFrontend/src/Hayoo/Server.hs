@@ -88,7 +88,7 @@ controlAjaxResults = do
     page <- getPage
     q <- Scotty.param "query"
     results <- query (q) page
-    Scotty.html $ Templates.ajax $ Templates.renderResults results
+    Scotty.html $ Templates.ajax $ Templates.renderBoxedResults results
 
 controlSimpleHtmlResults :: HayooAction ()
 controlSimpleHtmlResults = controlResults render def handleException 
