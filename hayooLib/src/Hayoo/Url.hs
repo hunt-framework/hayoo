@@ -23,10 +23,10 @@ queryForDocument p m f = H.qOrs [H.withBoost 100 q1, H.withBoost 10 q2, q3]
     q2 = H.qAnds ["name" `H.qContext` f, "package" `H.qContext` p]
     q3 = H.qAnds ["name" `H.qContext` f]
 
--- | gernerate a url to a 'H.Query' and a @page@.
-hayooQueryUrl :: Int -> H.Query -> Text
-hayooQueryUrl 0 q = hayooUrl [("query", H.printQuery q)]
-hayooQueryUrl p q = hayooUrl [("query", H.printQuery q), ("page", cs $ show p)]
+-- | gernerate a url to a @page@ and a 'H.Query'.
+hayooQueryUrl :: Int -> Text -> Text
+hayooQueryUrl 0 q = hayooUrl [("query", q)]
+hayooQueryUrl p q = hayooUrl [("query", q), ("page", cs $ show p)]
 
 -- | generte a url with a list or parameters
 hayooUrl :: [(Text, Text)] -> Text
@@ -37,4 +37,4 @@ hayooUrl q = ("/") <> (cs $ renderQuery True $ simpleQueryToQuery q')
 
 -- | gernerate a url to a 'Query' by a @package@, a @module@ and a @function or type@. 
 urlForDocument :: Text -> Text -> Text -> Text
-urlForDocument package mod func = hayooQueryUrl 0 $ queryForDocument package mod func
+urlForDocument package mod func = hayooQueryUrl 0 $ H.printQuery $ queryForDocument package mod func

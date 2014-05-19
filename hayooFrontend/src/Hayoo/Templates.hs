@@ -24,36 +24,23 @@ import           Text.Blaze (preEscapedToMarkup)
 
 import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
+import qualified Hunt.ClientInterface as H
 
 import           Hayoo.Common
+import           Hayoo.Url
 
-data Routes = Home | Simple | HayooJs | HayooCSS | Autocomplete | Examples | About
+data Routes = Home | HayooJs | HayooCSS | Autocomplete | Examples | About
 
-urlQ :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => Routes -> a -> Int -> b
-urlQ r q 0 = cs $ url r [("query", cs q)]
-urlQ r q p = cs $ url r [("query", cs q), ("page", cs $ show p)]
 
-urlQ0 :: (ConvertibleStrings TS.Text b, ConvertibleStrings a TS.Text) => a -> b
-urlQ0 q = urlQ Home q 0
 
-urlQ'L :: Text -> Int -> Text
-urlQ'L = urlQ Home 
+currentUrl :: Text -> Int -> Text
+currentUrl q p = cs $ hayooQueryUrl p (cs q) -- TODO: this converts Text.Lazy to Text to Bytestring to Text and to Text.Lazy
 
-urlQ'L' :: Routes -> Text -> Int -> Text
-urlQ'L' r = urlQ r 
-
-urlQ'S :: TS.Text -> Int -> TS.Text
-urlQ'S = urlQ Home 
-
-url :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
-url r q = cs $ (cs $ render r []) <> (renderQuery True simpleQuery)
-    where
-    simpleQuery :: Query
-    simpleQuery = simpleQueryToQuery $ over (mapped . both) cs $ q
+contextUrl :: H.Query -> TS.Text
+contextUrl q = hayooQueryUrl 0 $ printQuery q
 
 render :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
 render Home _ = "/"
-render Simple _ = "/simple/"
 render HayooJs _ = "/hayoo.js"
 render HayooCSS _ = "/hayoo.css"
 render Autocomplete _ = "/autocomplete"
@@ -272,7 +259,7 @@ renderDropdown r = renderDropdown' r qs'
 
 |]
         where
-        namedQueries = map (\q -> (contextQueryName q, urlQ'S (printQuery $ contextQueryToQuery q r) 0)) qs
+        namedQueries = map (\q -> (contextQueryName q, contextUrl $ contextQueryToQuery q r)) qs
 
     
     
@@ -286,20 +273,20 @@ renderPagination query' lr = [Hamlet.hamlet|
           <span>&laquo;
   $else
       <li>
-          <a href="#{urlQ'L query' leftArrowPage}">&laquo;
+          <a href="#{currentUrl query' leftArrowPage}">&laquo;
   $forall page <- pages
       $if page == currentPage
           <li .disabled>
               <span>#{page + 1}
       $else
           <li>
-              <a href="#{urlQ'L query' page}">#{page + 1}
+              <a href="#{currentUrl query' page}">#{page + 1}
   $if isLastPage
       <li .disabled>
           <span>&raquo;
   $else
       <li>
-          <a href="#{urlQ'L query' rightArrowPage}">&raquo;
+          <a href="#{currentUrl query' rightArrowPage}">&raquo;
           
 |]
     where
