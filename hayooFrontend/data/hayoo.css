@@ -31,11 +31,11 @@ body {
     z-index: 0
 }
 
-.description {
+/*.description {
   font-size: small;
   color: grey;
   padding-left: 1em;
-}
+}*/
 
 .breadcrumb {
   margin-bottom: 0px;

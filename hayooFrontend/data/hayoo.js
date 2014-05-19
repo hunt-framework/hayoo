@@ -20,37 +20,34 @@ function makeAutocomplete() {
 
 function makeMores () {
     var showChar = 150;
+    var maxChar = 500;
     var ellipsestext = "...";
     var moretext = "more";
     var lesstext = "less";
     $('.more').each(function() {
         var content = $(this).html();
+        var textContent = $(this).text();
 
-        if(content.length > showChar) {
+        if(textContent.length > maxChar) {
 
-            var c = content.substr(0, showChar);
-            var h = content.substr(showChar-1, content.length - showChar);
+            var c = textContent.substr(0, showChar);
+            
 
-            var html = c + '<span class="moreelipses">'+ellipsestext+'</span>&nbsp;<span class="morecontent"><span  style="display: none;">' + h + '</span>&nbsp;&nbsp;<a href="" class="morelink">'+moretext+'</a></span>';
-
+            var html = '<div class="preview">' + c + '<span class="moreelipses">'+ellipsestext+'</span>&nbsp;<a href="" class="morelink">'+moretext+'</a></span></div>'
+                     + '<div class="content" style="display: none;"">' + content + '<a href="" class="lesslink">'+lesstext+'</a></div>';
             $(this).html(html);
         }
 
     });
 
     $(".morelink").click(function(){
-        if($(this).hasClass("less")) {
-            $(this).removeClass("less");
-            $(this).html(moretext);
-            $(this).parent().prev().show()
-            $(this).prev().hide();
-        } else {
-            $(this).addClass("less");
-            $(this).html(lesstext);
-            $(this).parent().prev().hide();
-            $(this).prev().show();
-        }
-
+        $(this).parent().hide()
+        $(this).parent().next().show()
+        return false;
+    });
+    $(".lesslink").click(function(){
+        $(this).parent().hide()
+        $(this).parent().prev().show()
         return false;
     });
 }
