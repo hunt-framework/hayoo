@@ -6,6 +6,7 @@ module Hayoo.Url
     , hayooQueryUrl
     , hayooUrl
     , urlForDocument
+    , hackageSource
 )
 where
 
@@ -38,3 +39,6 @@ hayooUrl q = ("/") <> (cs $ renderQuery True $ simpleQueryToQuery q')
 -- | gernerate a url to a 'Query' by a @package@, a @module@ and a @function or type@. 
 urlForDocument :: Text -> Text -> Text -> Text
 urlForDocument package mod func = hayooQueryUrl 0 $ H.printQuery $ queryForDocument package mod func
+
+hackageSource :: Text -> Text -> Text
+hackageSource p sub = "http://hackage.haskell.org/package/" <> p <> "/docs/" <> sub

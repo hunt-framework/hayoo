@@ -199,6 +199,10 @@ renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
 renderDropdown r = renderDropdown' r qs'
     where
     qs' = contextQueries r
+    source = if Package == resultType r then
+            ""
+        else
+            hackageSource (resultPackage r) $ resultSource r
     renderDropdown' r [] = [Hamlet.hamlet|
 |]
     renderDropdown' r qs = [Hamlet.hamlet|
@@ -210,7 +214,11 @@ renderDropdown r = renderDropdown' r qs'
                 <li role="presentation">
                     <a role="menuitem" tabindex="-1" href="#{u}">
                         #{n}
-        
+            $if not $ TS.null source
+                <li role="presentation" .divider>
+                <li role="presentation">
+                    <a role="menuitem" tabindex="-1" href="#{source}">
+                        Source
 
 |]
         where
