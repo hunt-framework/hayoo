@@ -175,7 +175,9 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
     ^{renderBoxedResultHeading result} 
     <div .panel-body>
         <p>
-            #{resultPackage result} - #{resultModule result}
+            #{resultPackage result} - 
+            $forall m <- resultModules result
+                #{m}
         <div .description .more>
             #{preEscapedToMarkup $ resultDescription result}
 |]

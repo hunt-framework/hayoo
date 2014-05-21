@@ -61,7 +61,7 @@ import           Data.Typeable (Typeable)
 
 import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
-import           Hunt.ClientInterface (qOrs, qContext, qPhrase, qWord, withinContexts)
+import           Hunt.ClientInterface (qOrs, qAnd, qContext, qPhrase, qWord, withinContexts)
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..), printQuery)
 import           Hunt.Query.Language.Parser (parseQuery)
 
@@ -70,6 +70,7 @@ import           Network.HTTP.Conduit (HttpException)
 import qualified System.Log.Logger as Log (debugM)
 
 import           Text.Parsec (ParseError)
+import           Text.Read (readMaybe)
 
 import qualified Web.Scotty.Trans as Scotty
 
@@ -94,7 +95,7 @@ data SearchResult =
 #endif
         resultUri :: Text, 
         resultPackage :: Text,
-        resultModule :: Text,
+        resultModules :: [Text],
         resultName :: Text,
         resultSignature :: Text,
         resultDescription :: Text,
@@ -132,11 +133,13 @@ parsePackageResult score descr baseUri n = do
 
 parseNonPackageResult score descr baseUri n d t = do
     p  <- descr .:? "package" .!= "unknown"
-    m  <- descr .:? "module" .!= "Unknown"
+    m  <- descr .:? "module" .!= "[]"
     s  <- descr .:? "signature" .!= ""
     c  <- descr .:? "source" .!= ""
 --    u <- baseUri -- unparsedUri
-    return $ NonPackageResult score  baseUri p m n s d c t 
+    let mods :: [Text]
+        mods = maybe [m] id (readMaybe $ cs m)
+    return $ NonPackageResult score  baseUri p mods n s d c t 
 
 -- Partial Type Signature
 -- parseSearchResult :: Double -> Value -> _
@@ -260,16 +263,16 @@ data ContextQuery
 contextQueryToQuery :: ContextQuery -> SearchResult -> Query
 contextQueryToQuery (QueryReverseDependencies) sr = mkContext "dependencies" $ getSRPackage sr
 contextQueryToQuery (QueryPackageModules)      sr = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "type" "module")
-contextQueryToQuery (QueryPackageDatatypes)    sr = QBinary And (mkContext "package" $ getSRPackage sr) (foldr1 (QBinary Or) $ (mkContext "type") <$> ["data", "newtype", "type"])
+contextQueryToQuery (QueryPackageDatatypes)    sr = QBinary And (mkContext "package" $ getSRPackage sr) (qOrs $ (mkContext "type") <$> ["data", "newtype", "type"])
 contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = qOrs $ (withinContexts ["author"] . qPhrase) <$> authors
     where
     authors = map strip $ splitOn "," $ resultAuthor sr
 contextQueryToQuery (QueryPackageByAuthor)     _ = error "contextQueryToQuery: QueryPackageByAuthor: no package"
-contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "module" $ resultModule sr)
+contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = (mkContext "package" $ getSRPackage sr) `qAnd` (modulesInContext "module" sr)
 contextQueryToQuery (QueryModuleContent)       _ = error "contextQueryToQuery: QueryModuleContent: package"
-contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = QBinary And (mkContext "name" $ getSRPackage sr) (mkContext "type" "package")
+contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = (mkContext "name" $ getSRPackage sr) `qAnd` (mkContext "type" "package")
 contextQueryToQuery (QueryPackage)             _ = error "contextQueryToQuery: QueryPackage: package"
-contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = QBinary And (mkContext "name" $ resultModule sr) (mkContext "type" "module")
+contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = (modulesInContext "name" sr) `qAnd` (mkContext "type" "module")
 contextQueryToQuery (QueryModule)              _ = error "contextQueryToQuery: QueryPackage: package"
 
 contextQueryName :: ContextQuery -> Text
@@ -291,6 +294,8 @@ contextQueries sr
 mkContext :: Context -> Text -> Query
 mkContext c w = QContext [c] $ QWord QCase w
 
+modulesInContext :: Context -> SearchResult -> Query
+modulesInContext c sr = (withinContexts [c] $ qOrs $ qWord <$> (resultModules sr))
 -- ---------------------
 
 raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a
