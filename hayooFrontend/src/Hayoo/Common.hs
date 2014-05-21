@@ -61,6 +61,7 @@ import           Data.Typeable (Typeable)
 
 import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
+import           Hunt.ClientInterface (qOrs, qContext, qPhrase, qWord, withinContexts)
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..), printQuery)
 import           Hunt.Query.Language.Parser (parseQuery)
 
@@ -253,13 +254,14 @@ data ContextQuery
     | QueryPackageByAuthor
     | QueryModuleContent
     | QueryPackage
+    | QueryModule
     deriving (Show)
 
 contextQueryToQuery :: ContextQuery -> SearchResult -> Query
 contextQueryToQuery (QueryReverseDependencies) sr = mkContext "dependencies" $ getSRPackage sr
 contextQueryToQuery (QueryPackageModules)      sr = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "type" "module")
 contextQueryToQuery (QueryPackageDatatypes)    sr = QBinary And (mkContext "package" $ getSRPackage sr) (foldr1 (QBinary Or) $ (mkContext "type") <$> ["data", "newtype", "type"])
-contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = foldr1 (QBinary Or) $ mkContext "author" <$> authors
+contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = qOrs $ (withinContexts ["author"] . qPhrase) <$> authors
     where
     authors = map strip $ splitOn "," $ resultAuthor sr
 contextQueryToQuery (QueryPackageByAuthor)     _ = error "contextQueryToQuery: QueryPackageByAuthor: no package"
@@ -267,6 +269,8 @@ contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = QBinary A
 contextQueryToQuery (QueryModuleContent)       _ = error "contextQueryToQuery: QueryModuleContent: package"
 contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = QBinary And (mkContext "name" $ getSRPackage sr) (mkContext "type" "package")
 contextQueryToQuery (QueryPackage)             _ = error "contextQueryToQuery: QueryPackage: package"
+contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = QBinary And (mkContext "name" $ resultModule sr) (mkContext "type" "module")
+contextQueryToQuery (QueryModule)              _ = error "contextQueryToQuery: QueryPackage: package"
 
 contextQueryName :: ContextQuery -> Text
 contextQueryName QueryReverseDependencies = "Reverse Dependencies"
@@ -275,12 +279,13 @@ contextQueryName QueryPackageDatatypes = "Data types"
 contextQueryName QueryPackageByAuthor = "Packages by same author"
 contextQueryName QueryModuleContent = "Module content"
 contextQueryName QueryPackage = "Show related package"
+contextQueryName QueryModule = "Show related module"
 
 contextQueries :: SearchResult -> [ContextQuery]
 contextQueries sr
     | (resultType sr) == Package = [QueryReverseDependencies, QueryPackageModules, QueryPackageDatatypes, QueryPackageByAuthor]
     | (resultType sr) == Module  = [QueryModuleContent, QueryPackage]
-    | otherwise                  = [QueryPackage]
+    | otherwise                  = [QueryModule, QueryPackage]
 
 
 mkContext :: Context -> Text -> Query
