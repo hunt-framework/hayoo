@@ -272,7 +272,7 @@ contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = (mkContex
 contextQueryToQuery (QueryModuleContent)       _ = error "contextQueryToQuery: QueryModuleContent: package"
 contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = (mkContext "name" $ getSRPackage sr) `qAnd` (mkContext "type" "package")
 contextQueryToQuery (QueryPackage)             _ = error "contextQueryToQuery: QueryPackage: package"
-contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = (modulesInContext "name" sr) `qAnd` (mkContext "type" "module")
+contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = (modulesInContext "module" sr) `qAnd` (mkContext "type" "module")
 contextQueryToQuery (QueryModule)              _ = error "contextQueryToQuery: QueryPackage: package"
 
 contextQueryName :: ContextQuery -> Text
