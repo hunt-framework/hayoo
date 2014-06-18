@@ -12,7 +12,8 @@ import           Data.String.Conversions (cs)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 
-import           Hunt.Server.Client (newServerAndManager, LimitedResult)
+import           Hunt.Server.Client (newServerAndManager)
+import           Hunt.ClientInterface (LimitedResult)
 
 import           Network.HTTP.Types.Status (internalServerError500)
 import qualified Network.Wai.Middleware.RequestLogger as Wai

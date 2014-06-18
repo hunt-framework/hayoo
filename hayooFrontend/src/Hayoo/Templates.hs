@@ -5,10 +5,8 @@
 
 module Hayoo.Templates where
 
--- import           Control.Applicative ((<$>))
 import           Control.Lens
 
--- import           Data.Map (Map, toList)
 import           Data.Monoid (mconcat)
 
 import           Data.String.Conversions (cs, (<>), ConvertibleStrings)
@@ -16,7 +14,6 @@ import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
 
-import qualified Hunt.Server.Client as Api
 
 import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
@@ -25,6 +22,7 @@ import           Text.Blaze (preEscapedToMarkup)
 import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
 import qualified Hunt.ClientInterface as H
+import qualified Hunt.Server.Client as H
 
 import           Hayoo.Common
 import           Hayoo.Url
@@ -190,10 +188,10 @@ renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
             #{resultSynopsis result}
 |]
 
-renderBoxedResults :: Api.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
---renderBoxedResults r = error $ show $ Api.lrResult r
+renderBoxedResults :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+--renderBoxedResults r = error $ show $ H.lrResult r
 renderBoxedResults results = [Hamlet.hamlet|
-$forall r <- Api.lrResult results
+$forall r <- H.lrResult results
     ^{renderBoxedResult r}
 |]
 
@@ -230,7 +228,7 @@ renderDropdown r = renderDropdown' r qs'
     
 
 
-renderPagination :: Text -> Api.LimitedResult a -> Hamlet.HtmlUrl Routes
+renderPagination :: Text -> H.LimitedResult a -> Hamlet.HtmlUrl Routes
 renderPagination query' lr = [Hamlet.hamlet|
 <ul .pagination>
   $if isFirstPage
@@ -258,8 +256,8 @@ renderPagination query' lr = [Hamlet.hamlet|
         isFirstPage = currentPage == 0
         isLastPage = currentPage == lastPage
         page offset max' = offset `div` max'
-        lastPage = page (Api.lrCount lr) (Api.lrMax lr)
-        currentPage = page (Api.lrOffset lr) (Api.lrMax lr)
+        lastPage = page (H.lrCount lr) (H.lrMax lr)
+        currentPage = page (H.lrOffset lr) (H.lrMax lr)
 
         firstPagerPage = (currentPage - 2) `max` 0
         lastPagerPage = ((currentPage + 2) `max` 5) `min` lastPage
