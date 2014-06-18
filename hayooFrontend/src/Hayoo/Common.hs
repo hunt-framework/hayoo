@@ -61,7 +61,9 @@ import           Data.Typeable (Typeable)
 
 import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
-import           Hunt.ClientInterface (qOrs, qAnd, qContext, qPhrase, qWord, withinContexts)
+import           Hunt.ClientInterface (qOrs, qAnd, qContext, qPhrase, qWord, withinContexts, )
+import qualified Hunt.ClientInterface as H 
+
 import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..), printQuery)
 import           Hunt.Query.Language.Parser (parseQuery)
 
