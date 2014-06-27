@@ -13,7 +13,7 @@ insert:
 sandbox:
 	cd hayooLib       && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
 	cd hayooFrontend  && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
-	cd ../../hunt/ && cabal sandbox add-source hayooLib 
+	cd ../hunt/ && cabal sandbox add-source ../hayoo/hayooLib 
 
 binary-package:
 	cd hayooFrontend       && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)

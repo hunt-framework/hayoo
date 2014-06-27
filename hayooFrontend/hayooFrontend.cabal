@@ -25,9 +25,11 @@ source-repository head
 
 executable hayooFrontend
   hs-source-dirs: src
-  main-is:           Server.hs
+  main-is:           Main.hs
 
   other-modules:     Hayoo.Common
+                     Hayoo.Server
+                     Hayoo.Templates
     
     -- remove attoparsec, when bumpineg aeson to 0.7 !!!
   build-depends:     base

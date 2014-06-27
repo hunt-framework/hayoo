@@ -241,7 +241,8 @@ handleSignatureQuery q
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ H.evalAutocomplete q'
+    completions <- withServerAndManager' $ H.evalAutocomplete q'
+    return $ H.printQuery <$> H.completeQueries q' completions
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
