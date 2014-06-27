@@ -30,7 +30,7 @@ module Hayoo.Common
 , query
 , HayooConfiguration (..)
 -- -------
-, printQuery
+, H.printQuery
 , contextQueryToQuery
 , contextQueryName
 , ContextQuery ()
@@ -39,7 +39,7 @@ module Hayoo.Common
 
 import           GHC.Generics (Generic)
 
-import           Control.Applicative (Applicative, (<$>), (<*>), liftA2)
+import           Control.Applicative (Applicative, (<$>))
 import           Control.Exception (Exception, throwIO)
 import           Control.Exception.Lifted (catches, Handler (..))
 --import           Control.Failure (Failure, failure)
@@ -51,7 +51,6 @@ import           Control.Monad.Reader (ReaderT, MonadReader, ask, runReaderT,)
 
 import           Data.Aeson
 import           Data.Data (Data)
-import           Data.List (partition)
 import           Data.Scientific (Scientific)
 import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
@@ -59,12 +58,10 @@ import           Data.Text (Text, isInfixOf, splitOn, strip)
 import           Data.Typeable (Typeable)
 --import           Data.Vector ((!))
 
-import           Hunt.Common.BasicTypes (Context)
 import qualified Hunt.Server.Client as H
-import           Hunt.ClientInterface (qOrs, qAnd, qContext, qPhrase, qWord, withinContexts, )
+import           Hunt.ClientInterface (qOrs, qAnd, qOr, qContext, qPhrase, qWord, setContexts, Query, Context)
 import qualified Hunt.ClientInterface as H 
 
-import           Hunt.Query.Language.Grammar (Query (..), BinOp (..), TextSearchType (..), printQuery)
 import           Hunt.Query.Language.Parser (parseQuery)
 
 import           Network.HTTP.Conduit (HttpException)
@@ -233,9 +230,9 @@ handleSignatureQuery q
         sig = case parseSignature $ cs q of
             (Right s) -> return sigQ
                 where
-                    q1 = QContext ["signature"] $ QWord QCase (cs $ prettySignature s)
-                    q2 = QContext ["normalized"] $ QWord QCase (cs $ prettySignature $ fst $ normalizeSignature s)
-                    sigQ = QBinary Or q1 q2
+                    q1 = ["signature"]  `setContexts` (qWord $ cs $ prettySignature s)
+                    q2 = ["normalized"] `setContexts` (qWord $ cs $ prettySignature $ fst $ normalizeSignature s)
+                    sigQ = qOr q1 q2
             (Left err) -> liftIO $ throwIO $ ParseError err
         normalQuery = case parseQuery (cs q) of 
             (Right q') -> return q'
@@ -244,7 +241,7 @@ handleSignatureQuery q
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ H.evalAutocomplete q q'
+    withServerAndManager' $ H.evalAutocomplete q'
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
@@ -263,18 +260,18 @@ data ContextQuery
     deriving (Show)
 
 contextQueryToQuery :: ContextQuery -> SearchResult -> Query
-contextQueryToQuery (QueryReverseDependencies) sr = mkContext "dependencies" $ getSRPackage sr
-contextQueryToQuery (QueryPackageModules)      sr = QBinary And (mkContext "package" $ getSRPackage sr) (mkContext "type" "module")
-contextQueryToQuery (QueryPackageDatatypes)    sr = QBinary And (mkContext "package" $ getSRPackage sr) (qOrs $ (mkContext "type") <$> ["data", "newtype", "type"])
-contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = qOrs $ (withinContexts ["author"] . qPhrase) <$> authors
+contextQueryToQuery (QueryReverseDependencies) sr = qContext "dependencies" $ getSRPackage sr
+contextQueryToQuery (QueryPackageModules)      sr = qAnd (qContext "package" $ getSRPackage sr) (qContext "type" "module")
+contextQueryToQuery (QueryPackageDatatypes)    sr = qAnd (qContext "package" $ getSRPackage sr) (qOrs $ (qContext "type") <$> ["data", "newtype", "type"])
+contextQueryToQuery (QueryPackageByAuthor)     sr@PackageResult{} = qOrs $ (setContexts ["author"] . qPhrase) <$> authors
     where
     authors = map strip $ splitOn "," $ resultAuthor sr
 contextQueryToQuery (QueryPackageByAuthor)     _ = error "contextQueryToQuery: QueryPackageByAuthor: no package"
-contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = (mkContext "package" $ getSRPackage sr) `qAnd` (modulesInContext "module" sr)
+contextQueryToQuery (QueryModuleContent)       sr@NonPackageResult{} = (qContext "package" $ getSRPackage sr) `qAnd` (modulesInContext "module" sr)
 contextQueryToQuery (QueryModuleContent)       _ = error "contextQueryToQuery: QueryModuleContent: package"
-contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = (mkContext "name" $ getSRPackage sr) `qAnd` (mkContext "type" "package")
+contextQueryToQuery (QueryPackage)             sr@NonPackageResult{} = (qContext "name" $ getSRPackage sr) `qAnd` (qContext "type" "package")
 contextQueryToQuery (QueryPackage)             _ = error "contextQueryToQuery: QueryPackage: package"
-contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = (modulesInContext "module" sr) `qAnd` (mkContext "type" "module")
+contextQueryToQuery (QueryModule)              sr@NonPackageResult{} = (modulesInContext "module" sr) `qAnd` (qContext "type" "module")
 contextQueryToQuery (QueryModule)              _ = error "contextQueryToQuery: QueryPackage: package"
 
 contextQueryName :: ContextQuery -> Text
@@ -293,11 +290,9 @@ contextQueries sr
     | otherwise                  = [QueryModule, QueryPackage]
 
 
-mkContext :: Context -> Text -> Query
-mkContext c w = QContext [c] $ QWord QCase w
 
 modulesInContext :: Context -> SearchResult -> Query
-modulesInContext c sr = (withinContexts [c] $ qOrs $ qWord <$> (resultModules sr))
+modulesInContext c sr = (setContexts [c] $ qOrs $ qWord <$> (resultModules sr))
 -- ---------------------
 
 raiseExeptions :: HayooServer a -> Scotty.ActionT HayooException HayooServer a

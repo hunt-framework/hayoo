@@ -5,11 +5,11 @@
 
 module Hayoo.Templates where
 
-import           Control.Lens
+-- import           Control.Lens
 
-import           Data.Monoid (mconcat)
+-- import           Data.Monoid (mconcat)
 
-import           Data.String.Conversions (cs, (<>), ConvertibleStrings)
+import           Data.String.Conversions (cs)
 import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
@@ -19,10 +19,10 @@ import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 import           Text.Blaze (preEscapedToMarkup)
 
-import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
+-- import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
 import qualified Hunt.ClientInterface as H
-import qualified Hunt.Server.Client as H
+-- import qualified Hunt.Server.Client as H
 
 import           Hayoo.Common
 import           Hayoo.Url
@@ -196,16 +196,16 @@ $forall r <- H.lrResult results
 |]
 
 renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
-renderDropdown r = renderDropdown' r qs'
+renderDropdown r = renderDropdown' qs'
     where
     qs' = contextQueries r
     source = if Package == resultType r then
             ""
         else
             hackageSource (resultPackage r) $ resultSource r
-    renderDropdown' r [] = [Hamlet.hamlet|
+    renderDropdown' [] = [Hamlet.hamlet|
 |]
-    renderDropdown' r qs = [Hamlet.hamlet|
+    renderDropdown' qs = [Hamlet.hamlet|
 <div .pull-right .dropdown .text-primary id="fat-menu">
     <a href="#" id="drop3" role="button" .dropdown-toggle data-toggle="dropdown">
         More<b class="caret"></b>

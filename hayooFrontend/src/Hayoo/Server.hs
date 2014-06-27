@@ -4,7 +4,7 @@ module Hayoo.Server where
 
 
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Applicative ((<$>))
+-- import           Control.Applicative ((<$>))
 
 import           Data.Aeson.Types ()
 import           Data.String (fromString)
