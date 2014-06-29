@@ -9,23 +9,23 @@ Hayoo is a search engine for [Hackage](http://hackage.haskell.org/) packages. It
 Hunt
 ----
 
-Hayoo uses [Hunt](huntsearch.org) for indexing and searching. Hunt is a flexible, lightweight search platform with a powerful query language and JSON api. Hayoo exposes the query language through its interface and thus allows to execute advanced queries on Hayoo. 
+Hayoo uses [Hunt](huntsearch.org) for indexing and searching. Hunt is a flexible, lightweight search platform with a powerful query language and JSON API. Hayoo exposes the query language through its interface and thus allows to execute advanced queries on Hayoo. 
 
 Additionally, Hunt consists of a stand alone web server to allow integration into existing infrastructures without the need of writing Haskell code.
 
 
-Json api
+JSON API
 --------
 
-Hayoo exposes a Json api for the usage of other clients. The json api is available under [/json](/json?query=Monad). The json api accepts a parameter [page](/json?query=Monad&page=2) to cycle through the pages. 
+Hayoo exposes a JSON API for the usage of other clients. The JSON API is available under [/json](/json?query=Monad). The JSON API accepts a parameter [page](/json?query=Monad&page=2) to cycle through the pages. 
 
 Feedback
 --------
 
-Bug-reports should be submitted to [Github](https://github.com/hunt-framework/hayoo/issues), You can also provide Feedback to [info@huntsearch.org](mailto:info@huntsearch.org)
+Bug-reports should be submitted to [Github](https://github.com/hunt-framework/hayoo/issues). You can also provide Feedback to [info@huntsearch.org](mailto:info@huntsearch.org)
 
 History
 -------
 
-The old Hayoo is based on the Holumbus search engine. Hunt is the successor of Holumbus and the new Hayoo is a rewrite on top of the Hunt search engine. 
+The old Hayoo was based on the Holumbus search engine. The new Hayoo is a rewrite on top of the Hunt search engine, which is the successor of Holumbus. 
 
