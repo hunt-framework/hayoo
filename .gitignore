@@ -8,3 +8,4 @@ cabal-dev
 .virthualenv
 
 *.sandbox.config
+hayooFrontend/about.html

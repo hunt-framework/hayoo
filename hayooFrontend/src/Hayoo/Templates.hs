@@ -15,7 +15,7 @@ import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
 
 
-import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet)
+import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 import           Text.Blaze (preEscapedToMarkup)
 
@@ -314,11 +314,7 @@ mainPage = [Hamlet.hamlet|
 |]
 
 about :: Hamlet.HtmlUrl Routes
-about = [Hamlet.hamlet|
-<div .page-header>
-  <h1>
-      About Hayoo!
-|]
+about = $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
 
 examples :: Hamlet.HtmlUrl Routes
 examples = [Hamlet.hamlet|
