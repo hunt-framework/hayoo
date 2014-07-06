@@ -15,14 +15,17 @@ else
 endif
 
 
-install: about.html
+install: about.html examples.html 
 	cabal install $(PROFOPTS)
 
-build: about.html
+build: about.html examples.html
 	cabal build $(PROFOPTS)
 
-run: about.html
+run: about.html examples.html
 	cabal run --ghc-option=-auto-all --ghc-option=-caf-all -- $(RUNPOPTS)
 
 about.html: ../README.md
-		pandoc -t html -o about.html  --email-obfuscation=references ../README.md
+	pandoc -t html -o about.html  --email-obfuscation=references ../README.md
+
+examples.html: Examples.md
+	pandoc -t html -o examples.html Examples.md

@@ -67,7 +67,7 @@ dispatcher = do
         cssPath <- liftIO $ getDataFileName "hayoo.css"
         Scotty.file cssPath
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
-    Scotty.get "/about" $ Scotty.html $ Templates.body "" Templates.about 
+    Scotty.get "/about"    $ Scotty.html $ Templates.body "" Templates.about 
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
