@@ -52,21 +52,35 @@ function makeMores () {
     });
 }
 
-$().ready(function() {
-    makeAutocomplete()
-});
+var page = 0
+function addPage(reset) {
+    if (page < 20) {
+        params = {
+            "query": currentQuery
+        }
+        $.get("/ajax/" + page + "/", params, function(d){
+            $("#results").append(d)
+            page += 1
+        }).always(reset)
+    }
+}
 
-$(document).ready(function() {
-    makeMores()
-});
-
-
-function fillModule(id, query) {
-    $.ajax({
-        url: "/ajax/" + query
-    })
-    .done(function( html ) {
-        $( "#" + id ).html(html);
-        makeMores()
+function makeNextPage() {
+    $('#next-page-button').click(function () {
+        var btn = $(this)
+        btn.button('loading')
+        addPage(function () {
+            btn.button('reset')
+        });
     });
 }
+
+$().ready(function() {
+    makeAutocomplete()
+
+    makeMores()
+
+    makeNextPage()
+});
+
+

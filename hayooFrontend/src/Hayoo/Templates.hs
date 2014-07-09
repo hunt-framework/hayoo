@@ -66,6 +66,8 @@ header q = [Hamlet.hamlet|
     <script src=@{HayooJs}>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        var currentQuery = "#{q}"
 |]
 
 navigation :: Text -> Hamlet.HtmlUrl Routes
@@ -117,7 +119,7 @@ $doctype 5
     <body>
         ^{navigation q}
         
-        <div class="container">
+        <div .container>
             ^{content}
         
         ^{footer}
@@ -191,8 +193,12 @@ renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
 renderBoxedResults :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
 --renderBoxedResults r = error $ show $ H.lrResult r
 renderBoxedResults results = [Hamlet.hamlet|
-$forall r <- H.lrResult results
-    ^{renderBoxedResult r}
+<div #results>
+    $forall r <- H.lrResult results
+        ^{renderBoxedResult r}
+<div>
+    <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
+        Next Page
 |]
 
 renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
