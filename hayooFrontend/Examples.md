@@ -32,3 +32,8 @@ You can also modify search queries
 [!mapM](/?query=%21mapM) searches case sensitive for mapM
 
 <!--[~maMpaybe](/?query=~maMpaybe) is a fuzzy search and will show mapMaybe-->
+
+Range
+-----
+
+["upload:[2014-01-01T00:00:00 TO 2015-01-01T00:00:00]"](/?query=upload:[2014-01-01T00:00:00 TO 2015-01-01T00:00:00]) searches for all pakages, that were uploaded in 2014
