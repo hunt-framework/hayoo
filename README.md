@@ -27,5 +27,10 @@ Bug-reports should be submitted to [Github](https://github.com/hunt-framework/ha
 History
 -------
 
-The old Hayoo was based on the Holumbus search engine. The new Hayoo is a rewrite on top of the Hunt search engine, which is the successor of Holumbus. 
+The old Hayoo! was based on the [Holumbus search engine](//github.com/fortytools/holumbus), which was developed in 2008-2009 by [Timo B. Kranz](//github.com/tbk303) and [Sebastian M. Gauck](https://twitter.com/sgauck).
 
+The new Hayoo is a rewrite on top of the Hunt search engine, the successor of Holumbus, which was started in 2013 by [Ulf Sauer](//github.com/ulfS) and [Chris Reumann](//github.com/chrisreu) to improve and extend the
+existing Holumbus framework. 
+
+Both projects were developed at the [FH Wedel](http://fh-wedel.de) under supervision and active support of
+[Prof. Dr. Uwe Schmidt](http://fh-wedel.de/~si).

@@ -219,9 +219,12 @@ withServerAndManager' x = do
 
 -- ------------------------
 
+isSignatureQuery :: Text -> Bool
+isSignatureQuery q = "->" `isInfixOf` q
+
 handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m Query
 handleSignatureQuery q
-    | "->" `isInfixOf` q = do
+    | isSignatureQuery q = do
         s <- sig
         liftIO $ Log.debugM modName ("Signature Query: " <> (cs q) <> " >>>>>> " <> (show s))
         return s
@@ -232,17 +235,23 @@ handleSignatureQuery q
                 where
                     q1 = ["signature"]  `setContexts` (qWord $ cs $ prettySignature s)
                     q2 = ["normalized"] `setContexts` (qWord $ cs $ prettySignature $ fst $ normalizeSignature s)
-                    sigQ = qOr q1 q2
+                    sigQ = qOr q2 q1
             (Left err) -> liftIO $ throwIO $ ParseError err
         normalQuery = case parseQuery (cs q) of 
             (Right q') -> return q'
             (Left err) -> liftIO $ throwIO $ StringException err
 
+handleSignatureCompletionResults :: Text -> Query -> [Text] -> [Text]
+handleSignatureCompletionResults txt q comps
+    | isSignatureQuery txt = comps
+    | otherwise          = H.printQuery <$> H.completeQueries q comps
+
+
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    completions <- withServerAndManager' $ H.evalAutocomplete q'
-    return $ H.printQuery <$> H.completeQueries q' completions
+    handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.evalAutocomplete q')
+
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
