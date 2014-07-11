@@ -76,7 +76,7 @@ navigation q = [Hamlet.hamlet|
 
     <div .navbar-header .navbar-left>
         <a href=@{Home}>
-            <img .logo src="//holumbus.fh-wedel.de/hayoo/hayoo.png" alt="Hayoo! logo" >
+            <img .logo src="/download/hayoo.png" alt="Hayoo! logo" >
         <button type="button" .navbar-toggle data-toggle="collapse" data-target="#hayoo-navbar-collapse">
             <span .sr-only>Toggle navigation
             <span .icon-bar>
