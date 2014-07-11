@@ -95,7 +95,7 @@ controlSimpleHtmlResults :: HayooAction ()
 controlSimpleHtmlResults = controlResults render def handleException 
     where
         render :: TL.Text -> LimitedResult SearchResult -> HayooAction ()
-        render q r = Scotty.html $ Templates.body q (Templates.renderBoxedResults r)
+        render q r = Scotty.html $ Templates.body q (Templates.resultContent r)
         def = (Scotty.html $ Templates.body "" Templates.mainPage)
 
 controlSimpleResults ::  (LimitedResult SearchResult -> HayooAction ()) -> HayooAction ()

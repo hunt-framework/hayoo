@@ -7,6 +7,8 @@ module Hayoo.Url
     , hayooUrl
     , urlForDocument
     , hackageSource
+    , hackageModule
+    , hackagePackage
     )
 where
 
@@ -18,6 +20,8 @@ import qualified Hunt.ClientInterface    as H (Query, printQuery, qAnds,
                                                qContext, qOrs, setBoost)
 
 import           Network.HTTP.Types      (renderQuery, simpleQueryToQuery)
+
+import           Network.URI             (URI(..), parseURI)
 
 
 -- | generates a rendered 'Query' by a @package@, a @module@ and a @function or type@.
@@ -55,3 +59,16 @@ urlForDocument package modul func
 hackageSource :: Text -> Text -> Text
 hackageSource p sub
     = "http://hackage.haskell.org/package/" <> p <> "/docs/" <> sub
+
+
+hackageModule :: Text -> Text
+hackageModule url
+    = cs $ show modUrl
+      where
+      empty = URI "" Nothing "" "" ""
+      functionUrl = maybe empty id $ parseURI $ cs url
+      modUrl = functionUrl {uriFragment = ""}
+
+hackagePackage :: Text -> Text
+hackagePackage pac
+    = "http://hackage.haskell.org/package/" <> pac

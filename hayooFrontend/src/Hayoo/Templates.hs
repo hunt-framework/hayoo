@@ -125,8 +125,11 @@ $doctype 5
         ^{footer}
 |] render
 
-mainUri :: a -> a
-mainUri m = m --snd $ head $ toList m
+packageUrl :: SearchResult -> Text
+packageUrl r = cs $ hackagePackage $ resultPackage r
+
+moduleUrl :: SearchResult -> Text
+moduleUrl r = cs $ hackageModule $ resultUri r
 
 ajax :: Hamlet.HtmlUrl Routes -> T.Text 
 ajax content = T.pack $ Blaze.renderHtml $ content render
@@ -136,7 +139,7 @@ ajax content = T.pack $ Blaze.renderHtml $ content render
 renderBoxedResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
 renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{mainUri $ resultUri r}>
+    <a href=#{resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
     <span .label .label-default>
@@ -146,7 +149,7 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.haml
 
 renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{mainUri $ resultUri r}>
+    <a href=#{resultUri r}>
         #{resultName r}
     :: #{resultSignature r}
     ^{renderDropdown r}
@@ -155,14 +158,14 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.ha
 renderBoxedResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
     #{show $ resultType r}
-    <a href=#{mainUri $ resultUri r}>
+    <a href=#{resultUri r}>
         #{resultName r}
     ^{renderDropdown r}
 |]
 
 renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{mainUri $ resultUri r}>
+    <a href=#{resultUri r}>
         #{resultName r}
     <span .label .label-default>
         Package
@@ -175,9 +178,13 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
     ^{renderBoxedResultHeading result} 
     <div .panel-body>
         <p>
-            #{resultPackage result} - 
+            <a href="#{packageUrl result}">
+                #{resultPackage result}
+            - 
             $forall m <- resultModules result
-                #{m} &nbsp;
+                <a href="#{moduleUrl result}">
+                    #{m}
+                &nbsp;
         <div .description .more>
             #{preEscapedToMarkup $ resultDescription result}
 |]
@@ -196,6 +203,11 @@ renderBoxedResults results = [Hamlet.hamlet|
 <div #results>
     $forall r <- H.lrResult results
         ^{renderBoxedResult r}
+|]
+
+resultContent :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+resultContent results = [Hamlet.hamlet|
+^{renderBoxedResults results}
 <div>
     <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
         Next Page
