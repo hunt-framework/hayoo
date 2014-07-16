@@ -109,7 +109,7 @@ data SearchResult =
 #endif
         resultUri :: Text,  
         resultName :: Text,
-        resultDependencies :: Text,
+        resultDependencies :: [Text],
         resultMaintainer :: Text,
         resultSynopsis :: Text,
         resultAuthor :: Text,
@@ -122,7 +122,7 @@ getSRPackage sr@NonPackageResult{} = resultPackage sr
 getSRPackage sr@PackageResult{} = resultName sr
 
 parsePackageResult score descr baseUri n = do
-    dep <- descr .:? "dependencies" .!= ""
+    dep <- descr .:? "dependencies" .!= []
     m  <- descr .:? "maintainer" .!= ""
     s  <- descr .:? "synopsis" .!= ""
     a  <- descr .:? "author" .!= ""
