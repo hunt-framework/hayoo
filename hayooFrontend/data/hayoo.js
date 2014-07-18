@@ -81,6 +81,8 @@ $().ready(function() {
     makeMores()
 
     makeNextPage()
+
+    $("#hayoo").focus()
 });
 
 
