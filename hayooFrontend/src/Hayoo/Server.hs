@@ -15,7 +15,7 @@ import qualified Data.Text.Lazy as TL
 import           Hunt.Server.Client (newServerAndManager)
 import           Hunt.ClientInterface (LimitedResult)
 
-import           Network.HTTP.Types.Status (internalServerError500)
+import           Network.HTTP.Types.Status (internalServerError500, Status, notFound404, ok200)
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import qualified Network.Wai.Handler.Warp as W
 
@@ -111,11 +111,14 @@ controlResults repr emptyRepr exceptionHandler = do
             ((query (cs q) page) >>= repr (cs q)) `Scotty.rescue`  exceptionHandler (cs q)
         Nothing -> emptyRepr
     
-
+hayooExceptionToStatus :: HayooException -> Status
+hayooExceptionToStatus ParseError{} = ok200
+hayooExceptionToStatus FileNotFound{} = notFound404
+hayooExceptionToStatus _ = internalServerError500
 
 handleException :: TL.Text -> HayooException -> HayooAction ()
 handleException q e = do
-    Scotty.status internalServerError500
+    Scotty.status $ hayooExceptionToStatus e
     Scotty.html $ Templates.body q $ Templates.renderException e
             
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
