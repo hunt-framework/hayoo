@@ -22,7 +22,7 @@ Hayoo exposes a JSON API for the usage of other clients. The JSON API is availab
 Feedback
 --------
 
-Bug-reports should be submitted to [Github](hayoo-issues). You can also provide Feedback to [hayoo2@fh-wedel.de](mailto:hayoo2@fh-wedel.de) 
+Bug-reports should be submitted to [Github][hayoo-issues]. You can also provide Feedback to [hayoo2@fh-wedel.de](mailto:hayoo2@fh-wedel.de) 
 
 History
 -------
