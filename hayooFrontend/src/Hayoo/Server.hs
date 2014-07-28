@@ -74,6 +74,7 @@ handleAutocomplete :: HayooAction ()
 handleAutocomplete = do 
     q <- Scotty.param "term"
     value <- autocomplete q
+    Scotty.setHeader "Access-Control-Allow-Origin" "*"
     Scotty.json value
 
 getPage :: HayooAction Int
