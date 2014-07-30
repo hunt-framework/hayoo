@@ -1,28 +1,28 @@
 About
 =====
 
-What is Hayoo
+What is Hayoo?
 -------------
 
-Hayoo is a search engine for [Hackage][hackage] packages. It is possible to search for functions, data types and packages. Each indexed document consists of a name, a description and, if applicable, a signature. Have a look at the [examples](/examples) of how to use Hayoo. All available packages are indexed in contrast to Hoogle, although the signature search is not as advances as the one from Hoogle. 
+Hayoo is a search engine for [Hackage][hackage] packages, which allows you to search for functions, data types and packages. Each indexed document consists of a name, a description and, if applicable, a signature. Have a look at the [examples](/examples) on how to use Hayoo. In constrast to [Hoogle](http://www.haskell.org/hoogle/), all available packages are indexed, but the signature search is not as advanced.
 
 Hunt
 ----
 
-Hayoo uses [Hunt][huntsearch] for indexing and searching. Hunt is a flexible, lightweight search platform with a powerful query language and JSON API. Hayoo exposes the query language through its interface and thus allows to execute advanced queries on Hayoo. 
+Hayoo uses [Hunt][huntsearch] for indexing and searching. Hunt is a flexible, lightweight search platform with a powerful query language and JSON API. Hayoo exposes the query language through its own interface and allows the execution of advanced queries. 
 
-Additionally, Hunt consists of a stand alone web server to allow integration into existing infrastructures without the need of writing Haskell code.
+Additionally, Hunt consists of a standalone web server for easy integration into existing infrastructures without having to write Haskell code.
 
 
 JSON API
 --------
 
-Hayoo exposes a JSON API for the usage of other clients. The JSON API is available under [/json](/json?query=Monad). The JSON API accepts a parameter [page](/json?query=Monad&page=2) to cycle through the pages. 
+Hayoo exposes a JSON API for other clients via [/json](/json?query=Monad). The [page](/json?query=Monad&page=2) parameter can be used to cycle through the pages.
 
 Feedback
 --------
 
-Bug-reports should be submitted to [Github][hayoo-issues]. You can also provide Feedback to [hayoo2@fh-wedel.de](mailto:hayoo2@fh-wedel.de) 
+Any feedback is greatly appreciated! You can contact us via e-mail ([hayoo2@fh-wedel.de](mailto:hayoo2@fh-wedel.de)) or use the [issue system][hayoo-issues] to report bugs or suggest features.  
 
 History
 -------
