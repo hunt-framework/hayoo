@@ -1,3 +1,85 @@
+
+var Application;
+(function (Application) {
+    (function (Controller) {
+        var HayooController = (function () {
+            function HayooController($scope, $http, $location, $sce, $routeParams) {
+                this.$scope = $scope;
+                this.$http = $http;
+                this.$location = $location;
+                this.$sce = $sce;
+		
+		var hayoo = this;
+		hayoo.results = [];	// valid results
+		hayoo.error = [];	// error messages
+		
+		hayoo.page = 0;		// current page
+		hayoo.offset = 20;	// current results per page 
+		hayoo.count = 0;	// current queries results overall
+		
+		hayoo.isLastPage = (hayoo.page+1) > ((hayoo.count / hayoo.offset)-1);
+		hayoo.isFirstPage = hayoo.page === 0;
+		
+		$scope.$on('$routeChangeSuccess', function() {
+		   hayoo.query = $routeParams.query;
+		   var searchUrl = 'json?query=' + hayoo.query + "&page=" + hayoo.page;
+		   $http.get(searchUrl).success(function (data) {
+		      // todo: handle error messages as soon as they are available in json format
+		      hayoo.results = data.result;
+		      hayoo.count = data.count;
+		  });   
+		});		
+
+		this.search = function() {
+		   var query = hayoo.query === undefined ? "" : "/" + hayoo.query;
+		   hayoo.$location.path("/search"+ query);
+		}
+		
+		this.previous = function() {
+		   hayoo.page = hayoo.isFirstPage ? 0 : hayoo.page-1;
+		   hayoo.search();
+		}
+		
+		this.next = function() {
+		   hayoo.page = hayoo.isLastPage ? hayoo.page : hayoo.page+1;
+		   hayoo.search();
+		}
+            }
+            HayooController.$inject = ['$scope', '$http', '$location', '$sce', '$routeParams'];
+            return HayooController;
+        })();
+        Controller.HayooController = HayooController;
+    })(Application.Controller || (Application.Controller = {}));
+    var Controller = Application.Controller;
+})(Application || (Application = {}));
+
+var app = angular.module('Application', [
+  'ngRoute'
+]);
+
+app.config(['$routeProvider', function ($routeProvider) {
+    $routeProvider.
+        when('/search/', { 
+            templateUrl: './index.html',
+	    constroller: 'HayooController'
+        }).
+        when('/search/:query', { 
+            templateUrl: './results.html',
+	    constroller: 'HayooController'
+        }).
+        when('/examples', { 
+            templateUrl: './examples.html',
+        }).
+        when('/about', { 
+            templateUrl: './about.html',
+        }).
+        otherwise({
+            redirectTo: '/search'
+        });
+}]);
+
+app.controller('HayooController', Application.Controller.HayooController);
+
 function makeAutocomplete() {
     var cache = {};
     $( "#hayoo" ).autocomplete({

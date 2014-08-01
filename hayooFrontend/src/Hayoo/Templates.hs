@@ -5,10 +5,6 @@
 
 module Hayoo.Templates where
 
--- import           Control.Lens
-
--- import           Data.Monoid (mconcat)
-
 import           Data.String.Conversions (cs)
 import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
@@ -19,13 +15,11 @@ import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 import           Text.Blaze (preEscapedToMarkup)
 
--- import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
-
 import qualified Hunt.ClientInterface as H
--- import qualified Hunt.Server.Client as H
 
 import           Hayoo.Common
 import           Hayoo.Url
+
 
 data Routes = Home | HayooJs | HayooCSS | Autocomplete | Examples | About
 
@@ -42,88 +36,25 @@ render Home _ = "/"
 render HayooJs _ = "/hayoo.js"
 render HayooCSS _ = "/hayoo.css"
 render Autocomplete _ = "/autocomplete"
-render Examples _ = "/examples"
-render About _ = "/about"
+render Examples _ = "/#/examples"
+render About _ = "/#/about"
 
-renderTitle :: Text -> Text
-renderTitle q
-    | T.null q = "Hayoo! Haskell API Search"
-    | otherwise = q `T.append` " - Hayoo!"
 
-header :: Text -> Hamlet.HtmlUrl Routes
-header q = [Hamlet.hamlet|
-  <head>
-  
-    <title>#{renderTitle q}
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
-    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js">
-    <link href="//code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" rel="stylesheet">
-
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js">
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-    
-    <link href=@{HayooCSS} rel="stylesheet">
-    <script src=@{HayooJs}>
-    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script>
-        var currentQuery = "#{q}"
-|]
 
 navigation :: Text -> Hamlet.HtmlUrl Routes
-navigation q = [Hamlet.hamlet|
-<div .navbar .navbar-default .navbar-static-top role="navigation">
+navigation query = $(Hamlet.hamletFile "navigation.html")
 
-    <div .navbar-header .navbar-left>
-        <a href=@{Home}>
-            <img .logo src="/download/hayoo.png" alt="Hayoo! logo" >
-        <button type="button" .navbar-toggle data-toggle="collapse" data-target="#hayoo-navbar-collapse">
-            <span .sr-only>Toggle navigation
-            <span .icon-bar>
-            <span .icon-bar>
-            <span .icon-bar>
-       
-    <div .navbar-collapse .collapse #hayoo-navbar-collapse>
-        <ul .nav .navbar-nav .navbar-left>
-            <li .active>
-                <form .navbar-form .navbar-left action="." method="get" id="search" role="search">
-                    <div .form-group>
-                        <input .form-control placeholder="Search" name="query" #hayoo type="text" autocomplete="off" accesskey="1" value="#{q}">
-                    <input .btn .btn-default #submit type="submit" value="Search">
+renderLayout :: Text -> Hamlet.HtmlUrl Routes -> T.Text
+renderLayout query content = T.pack . Blaze.renderHtml $ $(Hamlet.hamletFile "index.html") render
 
-        <ul .nav .navbar-nav .navbar-right>
-            <li>
-                <a href=@{Examples}>Examples
-            <li>
-                <a href=@{About}>About
-|]
+results :: Hamlet.HtmlUrl Routes
+results  = $(Hamlet.hamletFile "results.html")
 
+about :: Hamlet.HtmlUrl Routes
+about = $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
 
-footer :: Hamlet.HtmlUrl Routes
-footer = [Hamlet.hamlet|
-<footer id="footer">
-    <a href=@{Home}> Hayoo Frontend
-    &copy; 2014 Sebastian Philipp | Powered by 
-    <a href="https://github.com/hunt-framework/hunt">
-        Hunt
-    |
-    <a href="https://github.com/hunt-framework/hayoo">
-        Github
-|]
-
-body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
-body q content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
-$doctype 5
-<html lang="en">
-    ^{header q}
-    <body>
-        ^{navigation q}
-        
-        <div .container>
-            ^{content}
-        
-        ^{footer}
-|] render
+examples :: Hamlet.HtmlUrl Routes
+examples = $(Hamlet.hamletFile "examples.html") -- use "make build" instead of "cabal build"!
 
 packageUrl :: SearchResult -> Text
 packageUrl r = cs $ hackagePackage $ resultPackage r
@@ -131,8 +62,8 @@ packageUrl r = cs $ hackagePackage $ resultPackage r
 moduleUrl :: SearchResult -> Text
 moduleUrl r = cs $ hackageModule $ resultUri r
 
-ajax :: Hamlet.HtmlUrl Routes -> T.Text 
-ajax content = T.pack $ Blaze.renderHtml $ content render
+renderAjax :: Hamlet.HtmlUrl Routes -> T.Text
+renderAjax content = T.pack $ Blaze.renderHtml $ content render
 
 -- ---------------------------------
 
@@ -175,12 +106,12 @@ renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 renderBoxedResult :: SearchResult -> Hamlet.HtmlUrl Routes
 renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderBoxedResultHeading result} 
+    ^{renderBoxedResultHeading result}
     <div .panel-body>
         <p>
             <a href="#{packageUrl result}">
                 #{resultPackage result}
-            - 
+            -
             $forall m <- resultModules result
                 <a href="#{moduleUrl result}">
                     #{m}
@@ -191,7 +122,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 
 renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderBoxedResultHeading result} 
+    ^{renderBoxedResultHeading result}
     <div .panel-body>
         <div .description .more>
             #{resultSynopsis result}
@@ -242,8 +173,8 @@ renderDropdown r = renderDropdown' qs'
         where
         namedQueries = map (\q -> (contextQueryName q, contextUrl $ contextQueryToQuery q r)) qs
 
-    
-    
+
+
 
 
 renderPagination :: Text -> H.LimitedResult a -> Hamlet.HtmlUrl Routes
@@ -268,7 +199,7 @@ renderPagination query' lr = [Hamlet.hamlet|
   $else
       <li>
           <a href="#{currentUrl query' rightArrowPage}">&raquo;
-          
+
 |]
     where
         isFirstPage = currentPage == 0
@@ -279,44 +210,44 @@ renderPagination query' lr = [Hamlet.hamlet|
 
         firstPagerPage = (currentPage - 2) `max` 0
         lastPagerPage = ((currentPage + 2) `max` 5) `min` lastPage
-        leftArrowPage = (firstPagerPage - 3) `max` 0 
-        rightArrowPage = (lastPagerPage + 3) `min` lastPage 
+        leftArrowPage = (firstPagerPage - 3) `max` 0
+        rightArrowPage = (lastPagerPage + 3) `min` lastPage
         pages = [firstPagerPage .. lastPagerPage]
-        
+
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|
 <div .alert .alert-danger>
     <strong>
-        Internal Error: 
+        Internal Error:
     #{e}
 |]
 
 renderException (HuntClientException e) =  [Hamlet.hamlet|
 <div .alert .alert-warning>
     <strong>
-        Internal Error: 
+        Internal Error:
     #{show e}
 |]
 
 renderException (HttpException e) =  [Hamlet.hamlet|
 <div .alert .alert-danger>
     <strong>
-        Connection Error: 
+        Connection Error:
     #{show e}
 |]
 
 renderException (ParseError e) =  [Hamlet.hamlet|
 <div .alert .alert-info>
     <strong>
-        Parse Error: 
+        Parse Error:
     #{show e}
 |]
 
 renderException FileNotFound = [Hamlet.hamlet|
 <div .alert .alert-info>
     <strong>
-        404: 
+        404:
     File Not Found.
 |]
 
@@ -326,13 +257,11 @@ mainPage = [Hamlet.hamlet|
   <h1>
       Hayoo! - Haskell Api Search
   <p>
-      Search for Packages, Functions and Signatures in 
+      Search for Packages, Functions and Signatures in
       <a href="http://hackage.haskell.org/">Hackage#
-      .      
+      .
 |]
 
-about :: Hamlet.HtmlUrl Routes
-about = $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
 
-examples :: Hamlet.HtmlUrl Routes
-examples = $(Hamlet.hamletFile "examples.html") -- use "make build" instead of "cabal build"!
+
+

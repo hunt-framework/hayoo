@@ -1,0 +1,32 @@
+<div ng-controller="HayooController as hayoo">
+
+  <div .alert .alert-info ng-if="hayoo.count == 0">
+    No results found.
+
+  <div .alert .alert-danger ng-if="hayoo.error > 0">
+    {{hayoo.error}}
+
+  <div ng-if="hayoo.count > 0">
+
+    <ul class="pager">
+      <li class="previous" ng-class="{disabled: hayoo.isFirstPage}">
+        <a href="" ng-click="hayoo.previous()">&larr; Previous
+      <li>Page {{hayoo.page + 1}}
+      <li class="next" ng-class="{disabled: hayoo.isLastPage}">
+        <a href="" ng-click="hayoo.next()" >Next &rarr;
+
+    <ul .list-group .result-list>
+      <li .list-group-item ng-class-even="" ng-repeat="result in hayoo.results">
+        <span class="badge">{{result.resultType}}
+        <a href="{{result.resultUri}}" target="_blank">
+          <span .resultname>
+            {{result.resultName}}
+        <span .signature>&nbsp;::&nbsp;{{result.resultSignature}}
+        <p>
+          test
+    <ul class="pager">
+      <li class="previous" ng-class="{disabled: hayoo.isFirstPage}">
+        <a href="" ng-click="hayoo.previous()">&larr; Previous
+      <li>Page {{hayoo.page + 1}}
+      <li class="next" ng-class="{disabled: hayoo.isLastPage}">
+        <a href="" ng-click="hayoo.next()" >Next &rarr;
