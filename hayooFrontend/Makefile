@@ -25,7 +25,7 @@ run: about.html examples.html
 	cabal run --ghc-option=-auto-all --ghc-option=-caf-all -- $(RUNPOPTS)
 
 about.html: ../README.md
-	pandoc -t html -o about.html  --email-obfuscation=references ../README.md
+	pandoc -t html -o ./templates/about.html  --email-obfuscation=references ../README.md
 
 examples.html: Examples.md
-	pandoc -t html -o examples.html Examples.md
+	pandoc -t html -o ./templates/examples.html Examples.md
