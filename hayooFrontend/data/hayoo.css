@@ -43,9 +43,11 @@ body {
   padding-bottom: 3px;
 }
 
-/*.panel {
-  margin-bottom: 5px;
-}*/
+.panel {
+  margin-bottom: 30px;
+  border: none;
+  box-shadow: none;
+}-
 
 .panel-heading {
   padding-top: 5px;
