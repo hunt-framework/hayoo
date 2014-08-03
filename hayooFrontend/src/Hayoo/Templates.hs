@@ -70,7 +70,7 @@ renderAjax content = T.pack $ Blaze.renderHtml $ content render
 renderBoxedResultHeading :: SearchResult -> Hamlet.HtmlUrl Routes
 renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{resultUri r} .result-title>
         #{resultName r}
     :: #{resultSignature r}
     <span .label .label-default>
@@ -80,7 +80,7 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Method}) = [Hamlet.haml
 
 renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{resultUri r} .result-title>
         #{resultName r}
     :: #{resultSignature r}
     ^{renderDropdown r}
@@ -89,14 +89,14 @@ renderBoxedResultHeading r@(NonPackageResult {resultType=Function}) = [Hamlet.ha
 renderBoxedResultHeading r@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
     #{show $ resultType r}
-    <a href=#{resultUri r}>
+    <a href=#{resultUri r} .result-title>
         #{resultName r}
     ^{renderDropdown r}
 |]
 
 renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel-heading>
-    <a href=#{resultUri r}>
+    <a href=#{resultUri r} .result-title>
         #{resultName r}
     <span .label .label-default>
         Package
@@ -108,7 +108,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
     ^{renderBoxedResultHeading result}
     <div .panel-body>
-        <p>
+        <p .result-subtitle>
             <a href="#{packageUrl result}">
                 #{resultPackage result}
             -

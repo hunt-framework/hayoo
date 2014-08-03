@@ -9,3 +9,5 @@ cabal-dev
 
 *.sandbox.config
 hayooFrontend/about.html
+hayooFrontend/examples.html
+index/
