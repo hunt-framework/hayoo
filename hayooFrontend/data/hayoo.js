@@ -20,7 +20,7 @@ function makeAutocomplete() {
 
 function makeMores () {
     var showChar = 150;
-    var maxChar = 500;
+    var maxChar = 200;
     var ellipsestext = "...";
     var moretext = "more";
     var lesstext = "less";

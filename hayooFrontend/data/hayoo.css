@@ -43,9 +43,9 @@ body {
   padding-bottom: 3px;
 }
 
-.panel {
+/*.panel {
   margin-bottom: 5px;
-}
+}*/
 
 .panel-heading {
   padding-top: 5px;
@@ -74,4 +74,23 @@ footer {
 
 #hayoo {
   width: 300px;
+}
+
+.more {
+  font-size: small;
+  color: grey;
+}
+
+pre {
+  font-size: small;
+  color: grey;  
+}
+
+code {
+  font-size: small;
+  color: grey;  
+}
+
+.result-subtitle{
+  font-size: small;  
 }
