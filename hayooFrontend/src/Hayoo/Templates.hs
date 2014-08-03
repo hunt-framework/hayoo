@@ -42,19 +42,19 @@ render About _ = "/#/about"
 
 
 navigation :: Text -> Hamlet.HtmlUrl Routes
-navigation query = $(Hamlet.hamletFile "navigation.html")
+navigation query = $(Hamlet.hamletFile "./templates/navigation.html")
 
 renderLayout :: Text -> Hamlet.HtmlUrl Routes -> T.Text
-renderLayout query content = T.pack . Blaze.renderHtml $ $(Hamlet.hamletFile "index.html") render
+renderLayout query content = T.pack . Blaze.renderHtml $ $(Hamlet.hamletFile "./templates/index.html") render
 
 results :: Hamlet.HtmlUrl Routes
-results  = $(Hamlet.hamletFile "results.html")
+results  = $(Hamlet.hamletFile "./templates/results.html")
 
 about :: Hamlet.HtmlUrl Routes
-about = $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
+about = $(Hamlet.hamletFile "./templates/about.html")
 
 examples :: Hamlet.HtmlUrl Routes
-examples = $(Hamlet.hamletFile "examples.html") -- use "make build" instead of "cabal build"!
+examples = $(Hamlet.hamletFile "./templates/examples.html")
 
 packageUrl :: SearchResult -> Text
 packageUrl r = cs $ hackagePackage $ resultPackage r
