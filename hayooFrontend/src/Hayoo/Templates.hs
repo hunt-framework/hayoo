@@ -324,11 +324,11 @@ mainPage :: Hamlet.HtmlUrl Routes
 mainPage = [Hamlet.hamlet|
 <div .jumbotron>
   <h1>
-      Hayoo! - Haskell Api Search
+      Hayoo! - Haskell API Search
   <p>
-      Search for Packages, Functions and Signatures in 
-      <a href="http://hackage.haskell.org/">Hackage#
-      .      
+      Search #
+      <a href="http://hackage.haskell.org/">Hackage
+      \ by function, signature or package.
 |]
 
 about :: Hamlet.HtmlUrl Routes
