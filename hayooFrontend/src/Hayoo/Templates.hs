@@ -186,7 +186,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
                     #{m}
                 &nbsp;
         <div .description .more>
-            #{preEscapedToMarkup $ resultDescription result}
+            #{preEscapedToMarkup $ escapeScript resultDescription result}
 |]
 
 renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
@@ -194,7 +194,7 @@ renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
     ^{renderBoxedResultHeading result} 
     <div .panel-body>
         <div .description .more>
-            #{resultSynopsis result}
+            #{escapeScript resultSynopsis result}
 |]
 
 renderBoxedResults :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes

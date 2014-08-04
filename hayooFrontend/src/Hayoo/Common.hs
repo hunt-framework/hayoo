@@ -35,6 +35,7 @@ module Hayoo.Common
 , contextQueryName
 , ContextQuery ()
 , contextQueries
+, escapeScript
 ) where
 
 import           GHC.Generics (Generic)
@@ -54,7 +55,7 @@ import           Data.Data (Data)
 import           Data.Scientific (Scientific)
 import           Data.String (IsString, fromString)
 import           Data.String.Conversions (cs, (<>))
-import           Data.Text (Text, isInfixOf, splitOn, strip)
+import           Data.Text (Text, isInfixOf, splitOn, strip, replace)
 import           Data.Typeable (Typeable)
 --import           Data.Vector ((!))
 
@@ -120,6 +121,9 @@ data SearchResult =
 getSRPackage :: SearchResult -> Text
 getSRPackage sr@NonPackageResult{} = resultPackage sr
 getSRPackage sr@PackageResult{} = resultName sr
+
+escapeScript :: (SearchResult -> Text) -> SearchResult -> Text
+escapeScript f sr = replace "<script" "&lt;script" $ replace "</script" "&lt;/script" $ f sr
 
 parsePackageResult score descr baseUri n = do
     dep <- descr .:? "dependencies" .!= []
