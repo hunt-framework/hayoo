@@ -52,21 +52,21 @@ first-install: sandbox install
 hayooFrontend-configure:
 	cd hayooFrontend && cabal configure $(PROFOPTS)
 
-hayooFrontend-install: hayooFrontend/about.html hayooFrontend/examples.html 
+hayooFrontend-install: hayooFrontend/templates/about.html hayooFrontend/templates/examples.html 
 	cd hayooFrontend && cabal install $(PROFOPTS)
 
-hayooFrontend-build: hayooFrontend/about.html hayooFrontend/examples.html
+hayooFrontend-build: hayooFrontend/templates/about.html hayooFrontend/templates/examples.html
 	cd hayooFrontend && cabal build $(PROFOPTS)
 
 # --ghc-option=-auto-all --ghc-option=-caf-all -- $(RUNPOPTS)
-hayooFrontend-run: hayooFrontend/about.html hayooFrontend/examples.html
+hayooFrontend-run: hayooFrontend/templates/about.html hayooFrontend/templates/examples.html
 	cd hayooFrontend && cabal run
 
-hayooFrontend/about.html: README.md
-	pandoc -t html -o hayooFrontend/about.html  --email-obfuscation=references README.md
+hayooFrontend/templates/about.html: README.md
+	pandoc -t html -o hayooFrontend/templates/about.html  --email-obfuscation=references README.md
 
-hayooFrontend/examples.html: Examples.md
-	pandoc -t html -o hayooFrontend/examples.html Examples.md
+hayooFrontend/templates/examples.html: Examples.md
+	pandoc -t html -o hayooFrontend/templates/examples.html Examples.md
 
 hayooLib-install: 
 	cd hayooLib       && cabal install
