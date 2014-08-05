@@ -15,7 +15,7 @@ import qualified Data.Text as TS
 import qualified Data.Text.Lazy as T
 
 
-import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile)
+import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile, shamletFile)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
 import           Text.Blaze (preEscapedToMarkup)
 
@@ -66,6 +66,7 @@ header q = [Hamlet.hamlet|
     <script src=@{HayooJs}>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="search" title="Hayoo! Haskell API Search" href="opensearch.xml" type="application/opensearchdescription+xml"/>
     <script>
         var currentQuery = "#{q}"
 |]

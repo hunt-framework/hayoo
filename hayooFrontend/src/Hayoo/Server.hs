@@ -49,23 +49,25 @@ start config = do
 
     Scotty.scottyOptsT options runM runActionToIO $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
-        dispatcher      
+        dispatcher   
+
+fromFileWithMime :: FilePath -> TL.Text -> Scotty.ActionT HayooException HayooServer ()
+fromFileWithMime path mime = do
+    Scotty.setHeader "Content-Type" mime
+    fullPath <- liftIO $ getDataFileName path
+    Scotty.file fullPath
+
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
     Scotty.get "/"       $ (controlSimpleHtmlResults)
     Scotty.get "/json"   $ (controlSimpleResults Scotty.json)
     Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
+    Scotty.get "/opensearch.xml" $ fromFileWithMime "opensearch.xml" "application/opensearchdescription+xml"
+    Scotty.get "/opensearch" $ handleOpenSearch `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/ajax/:page/" $ controlAjaxResults
-
-    Scotty.get "/hayoo.js" $ do
-        Scotty.setHeader "Content-Type" "text/javascript"
-        jsPath <- liftIO $ getDataFileName "hayoo.js"
-        Scotty.file jsPath
-    Scotty.get "/hayoo.css" $ do
-        Scotty.setHeader "Content-Type" "text/css"
-        cssPath <- liftIO $ getDataFileName "hayoo.css"
-        Scotty.file cssPath
+    Scotty.get "/hayoo.js" $ fromFileWithMime "hayoo.js" "text/javascript"
+    Scotty.get "/hayoo.css" $ fromFileWithMime "hayoo.css" "text/css"
     Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about"    $ Scotty.html $ Templates.body "" Templates.about 
     Scotty.notFound $ handleException "" FileNotFound
@@ -76,6 +78,13 @@ handleAutocomplete = do
     value <- autocomplete q
     Scotty.setHeader "Access-Control-Allow-Origin" "*"
     Scotty.json value
+
+handleOpenSearch :: HayooAction ()
+handleOpenSearch = do 
+    q <- Scotty.param "term"
+    value <- autocomplete q
+    Scotty.setHeader "Access-Control-Allow-Origin" "*"
+    Scotty.json (q, value)
 
 getPage :: HayooAction Int
 getPage = do
