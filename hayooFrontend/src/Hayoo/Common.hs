@@ -45,6 +45,7 @@ import           Control.Exception (Exception, throwIO)
 import           Control.Exception.Lifted (catches, Handler (..))
 --import           Control.Failure (Failure, failure)
 import           Control.Monad.Base (MonadBase, liftBase, liftBaseDefault)
+import           Control.Monad.Catch (MonadThrow)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans.Class (MonadTrans, lift)
 import           Control.Monad.Trans.Control (MonadBaseControl, StM, liftBaseWith, restoreM, ComposeSt, defaultLiftBaseWith, defaultRestoreM, MonadTransControl, StT, liftWith, restoreT, defaultLiftWith, defaultRestoreT)
@@ -185,7 +186,7 @@ instance IsString HayooException where
         fromString s = StringException $ cs s
 
 newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAndManager m a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadReader (H.ServerAndManager), MonadTrans)
+    deriving (Functor, Applicative, Monad, MonadIO, MonadReader (H.ServerAndManager), MonadTrans, MonadThrow)
 
 type HayooServer = HayooServerT IO
 
@@ -218,7 +219,7 @@ runHayooReader' x s = do
 withServerAndManager' :: (MonadIO m, MonadBaseControl IO m) => H.HuntConnectionT (HayooServerT m) b -> HayooServerT m b
 withServerAndManager' x = do
     sm <- ask
-    H.withServerAndManager x sm
+    H.withServerAndManager sm x
 
 
 -- ------------------------
@@ -254,13 +255,13 @@ handleSignatureCompletionResults txt q comps
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.evalAutocomplete q')
+    handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.postAutocomplete q')
 
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
     q' <- handleSignatureQuery q
-    withServerAndManager' $ H.evalQuery q' (p * 20)
+    withServerAndManager' $ H.postQuery q' (p * 20)
 
 -- ------------------------------
 data ContextQuery

@@ -41,7 +41,7 @@ clean:
 
 start-hunt-scotty: index/hayoo.index.json ../hunt/.cabal-sandbox/bin/hunt-server-cli
 	cd ../hunt && make startServer
-	../hunt/.cabal-sandbox/bin/hunt-server-cli eval index/hayoo.index.json
+	sleep 1 && ../hunt/.cabal-sandbox/bin/hunt-server-cli eval index/hayoo.index.json
 
 first-run: start-hunt-scotty run
 
