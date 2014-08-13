@@ -52,7 +52,7 @@ function makeMores () {
     });
 }
 
-var page = 0
+var page = 1
 function addPage(reset) {
     if (page < 20) {
         params = {
