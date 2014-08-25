@@ -30,6 +30,7 @@ library
   build-depends:         base               >= 4.6 && < 5
                        , http-types         >= 0.8
                        , hunt-searchengine
+                       , hxt-charproperties >= 9
                        , mtl                >= 2.1
                        , parsec             >= 3.1
                        , string-conversions >= 0.3
