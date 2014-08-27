@@ -23,34 +23,31 @@ module Hayoo.ParseSignature
     , subSignatures
     , normSignatures
     , normSignature
+    , isComplex
     , complexSignatures
-    , buildConstructorSignature
+    , buildConstructorSignature  -- for Hayoo indexer
     )
 where
-
-import           Prelude                               hiding (mapM, sequence)
-
-import           Data.Foldable                         (Foldable)
-import           Data.List                             (intercalate, nub)
-import           Data.String                           (IsString, fromString)
-import           Data.Traversable                      (Traversable, mapM)
 
 import           Control.Applicative                   ((*>), (<$>), (<*),
                                                         (<*>))
 import           Control.Monad.Identity                (Identity)
 import           Control.Monad.State                   (State, get, put,
                                                         runState)
-
 import           Data.Char.Properties.UnicodeCharProps (isUnicodeLl,
                                                         isUnicodeLt,
                                                         isUnicodeLu, isUnicodeN,
                                                         isUnicodeP, isUnicodeS)
-
+import           Data.Foldable                         (Foldable)
+import           Data.List                             (intercalate, nub)
+import           Data.String                           (IsString, fromString)
+import           Data.Traversable                      (Traversable, mapM)
+import           Prelude                               hiding (mapM, sequence)
 import           Text.Parsec                           (ParseError, ParsecT,
                                                         char, eof, many, many1,
                                                         parse, satisfy, sepBy,
-                                                        spaces, string, try,
-                                                        (<?>), (<|>))
+                                                        spaces, string, (<?>),
+                                                        (<|>))
 
 -- ------------------------------------------------------------
 
@@ -73,7 +70,14 @@ type Signature = SignatureT String
 
 type StringParsec r = ParsecT String () Identity r
 
-idChar' :: (Char -> Bool) -> StringParsec Char
+type SignatureParser = StringParsec Signature
+type StringParser    = StringParsec String
+type CharParser      = StringParsec Char
+
+-- --------------------
+-- Char parser
+
+idChar' :: (Char -> Bool) -> CharParser
 idChar' p
     = satisfy (\ c ->    isUnicodeLl c   -- lowercase letter
                       || isUnicodeLu c   -- uppercase letter
@@ -82,13 +86,13 @@ idChar' p
                       || p c
                  )
 
-idChar :: StringParsec Char
+idChar :: CharParser
 idChar = idChar' (`elem` "_'")
 
-idCharDot :: StringParsec Char
+idCharDot :: CharParser
 idCharDot = idChar' (`elem` "_'.") -- "." is included for qualified names
 
-symChar :: StringParsec Char
+symChar :: CharParser
 symChar
     = satisfy
       (\ c -> ( c < '\128'
@@ -104,102 +108,93 @@ symChar
               )
       )
 
-idSuffix :: StringParsec String
+-- --------------------
+-- String parser
+
+idSuffix :: StringParser
 idSuffix = many idChar
 
-idSuffixDot :: StringParsec String
+idSuffixDot :: StringParser
 idSuffixDot = many idCharDot
 
-varId :: StringParsec String
+varId :: StringParser
 varId = (:) <$> satisfy (\ c -> isUnicodeLl c || c == '_')
             <*> idSuffix
 
-typeId :: StringParsec String
+typeId :: StringParser
 typeId = (:) <$> satisfy (\ c -> isUnicodeLu c || isUnicodeLt c)
              <*> idSuffixDot  -- type names may be qualified
 
-conOp :: StringParsec String  -- infix type def, e.g "a :+: b"
+conOp :: StringParser  -- infix type def, e.g "a :+: b"
 conOp = (:) <$> char ':'
             <*> many symChar
 
-varSy :: StringParsec Signature
+-- --------------------
+-- Signature parser
+
+varSy :: SignatureParser
 varSy = VarSym <$> (varId <* spaces)
 
-typeSy :: StringParsec Signature
+typeSy :: SignatureParser
 typeSy = TypeSym <$> (typeId <* spaces)
 
-conSy :: StringParsec Signature
+conSy :: SignatureParser
 conSy = (TypeSym <$> (conOp <* spaces))
         -- <|>
-        -- (VarSym  <$> (varOp <* spaces)) -- TODO: pretty of infix operators
+        -- (VarSym  <$> (varOp <* spaces)) -- TODO: pretty of type variables as operators
 
-infixIdSy :: StringParsec Signature
+infixIdSy :: SignatureParser
 infixIdSy = char '`' *> ((TypeSym <$> typeId)
                          <|>
                          (VarSym  <$> varId )) <* (char '`' <* spaces)
 
-infixSy :: StringParsec Signature
-infixSy = conSy <|> infixIdSy
+infixSy :: SignatureParser
+infixSy =     conSy
+          <|> infixIdSy
 
-symbol' :: StringParsec Signature
-symbol'
-    =     varSy
-      <|> typeSy
-      <?> "varSy or typSy"
+prim :: SignatureParser
+prim
+    = typeSy <|> varSy' <|> tuple <|> list
+      <?> "primitive type"
+    where
+      varSy'
+          = do sy <- varSy
+               case sy of
+                 VarSym "forall"  -- check for reserved word "forall"
+                     -> existentialType
+                 _   -> return sy
 
-typeBranch :: StringParsec Signature
-typeBranch
-    = tuple
-      <|> list
-      <|> try symbol'
-
-typeApplication :: StringParsec Signature
-typeApplication = do
-  prefix <- symbol'
-  case prefix of
-    VarSym "forall"
-        -> existentialType
-    _   -> ((TypeApp . (prefix :)) <$> many1 typeBranch)
-           <|> return prefix
-
-typeApp :: StringParsec Signature
+typeApp :: SignatureParser
 typeApp
-    = do t1 <- typeApplication
+    = do ts <- many1 prim
+         case ts of
+           [t] -> return t
+           _   -> return $ TypeApp ts
+
+typeInfix :: SignatureParser
+typeInfix
+    = do t1 <- typeApp
          typeOp t1 <|> return t1
     where
       typeOp t1
           = (\ op t2 -> TypeApp [op, t1, t2])
-            <$> infixSy <*> typeApplication
+            <$> infixSy <*> typeApp  -- or typeInfix ?
 
-existentialType :: StringParsec Signature
-existentialType
-    = ExType <$> many1 varSy
-             <*> (string "." *> spaces *> expr)
-
-exprBranch :: StringParsec Signature
-exprBranch
-    = tuple
-      <|> list
-      <|> typeApp  -- lication
-      <?> "expression"
-
-expr :: StringParsec Signature
+expr :: SignatureParser
 expr = do
-    btype <- exprBranch
+    btype <- typeInfix -- exprBranch
     (     Function btype <$> (sarrow      *> spaces *> expr))
       <|> (Context btype <$> (darrow      *> spaces *> expr))
       <|> (Equiv   btype <$> (string "~"  *> spaces *> expr))
-      -- <|> (\ op t2 -> TypeApp [op, btype, t2])         -- priorty o.k.?
-      --                    <$> conSy <*> exprBranch
       <|> return btype
     where
       sarrow = string "->" <|> string "\8594"   -- unicode ->
       darrow = string "=>" <|> string "\8658"   -- unicode =>
 
-list :: StringParsec Signature
+list :: SignatureParser
 list = (TypeApp . (TypeSym "[]" :) . (:[])) <$> brackets expr
 
-tuple :: StringParsec Signature
+tuple :: SignatureParser
 tuple = do
     elems <- (parens $ sepBy expr $ (char ',' *> spaces))
     case elems of
@@ -207,7 +202,12 @@ tuple = do
         [e] -> return e
         _   -> return $ Tuple elems
 
-brackets ::  StringParsec Signature -> StringParsec Signature
+existentialType :: SignatureParser
+existentialType
+    = ExType <$> many1 varSy
+             <*> (string "." *> spaces *> expr)
+
+brackets ::  SignatureParser -> SignatureParser
 brackets sub
     = (char '[' *> spaces) *> sub <* (char ']' *> spaces)
 
@@ -215,7 +215,7 @@ parens ::  StringParsec a -> StringParsec a
 parens sub
     = (char '(' *> spaces) *> sub <* (char ')' *> spaces)
 
-withEof :: StringParsec Signature -> StringParsec Signature
+withEof :: SignatureParser -> SignatureParser
 withEof content
     = content <* eof
 
@@ -342,8 +342,8 @@ countComplex (Context  cx    ty    )  = 1 + countComplex cx    + countComplex ty
 countComplex (Equiv    l     r     )  = 1 + countComplex l     + countComplex r
 countComplex (ExType   ls    ty    )  = length ls              + countComplex ty
 
-isCompex :: Int -> Signature -> Bool
-isCompex c s = countComplex s >= c
+isComplex :: Int -> Signature -> Bool
+isComplex c s = countComplex s >= c
 
 expand' :: Signature -> [Signature]
 expand' s = ps1 ++ ps2 ++ children s
@@ -377,11 +377,11 @@ normSignature s
 
 subSignatures :: Signature -> [Signature]
 subSignatures
-    = nub . map (fst . normalizeSignature) . subs
-    where
-      subs (Context cx ty) = cxElems cx ++ [ty] ++ subs ty
-      subs  Equiv{}        = []
-      subs  s              = expand' s
+  = nub . map (fst . normalizeSignature) . subs
+  where
+    subs (Context cx ty) = cxElems cx ++ [ty] ++ subs ty
+    subs  Equiv{}        = []
+    subs  s              = expand' s
 
 -- | Filter signatures by complexity.
 --
@@ -389,7 +389,7 @@ subSignatures
 -- All signatures with complexity @< c@ is removed
 
 complexSignatures :: Int -> [Signature] -> [Signature]
-complexSignatures c = filter (isCompex c)
+complexSignatures c = filter (isComplex c)
 
 -- | Parse a signature and rename variables by using a,b,c,...
 
@@ -414,7 +414,7 @@ buildConstructorSignature s
 -- ------------------------------------------------------------
 
 expand :: Signature -> [Signature]
-expand s = nub $ s : (filter (isCompex 3) $ expand' s)
+expand s = nub $ s : (filter (isComplex 3) $ expand' s)
 
 {-# DEPRECATED expand "Use subSignatures instead" #-}
 

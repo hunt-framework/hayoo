@@ -1,6 +1,7 @@
 /hayooFrontend/cabal.sandbox.config
 dist
 cabal-dev
+*~
 *.o
 *.hi
 *.chi
@@ -11,3 +12,4 @@ cabal-dev
 hayooFrontend/about.html
 hayooFrontend/examples.html
 index/
+TAGS
