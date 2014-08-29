@@ -19,6 +19,8 @@ data-dir:            data
 data-files:          hayoo.css
                      hayoo.js
                      opensearch.xml
+                     favicon.ico
+                     hayoo.png
 
 source-repository head
   type:        git

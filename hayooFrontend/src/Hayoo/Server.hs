@@ -60,16 +60,18 @@ fromFileWithMime path mime = do
 
 dispatcher :: Scotty.ScottyT HayooException HayooServer ()
 dispatcher = do
-    Scotty.get "/"       $ (controlSimpleHtmlResults)
-    Scotty.get "/json"   $ (controlSimpleResults Scotty.json)
-    Scotty.get "/autocomplete" $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
+    Scotty.get "/"               $ (controlSimpleHtmlResults)
+    Scotty.get "/json"           $ (controlSimpleResults Scotty.json)
+    Scotty.get "/autocomplete"   $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/opensearch.xml" $ fromFileWithMime "opensearch.xml" "application/opensearchdescription+xml"
-    Scotty.get "/opensearch" $ handleOpenSearch `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
-    Scotty.get "/ajax/:page/" $ controlAjaxResults
-    Scotty.get "/hayoo.js" $ fromFileWithMime "hayoo.js" "text/javascript"
-    Scotty.get "/hayoo.css" $ fromFileWithMime "hayoo.css" "text/css"
-    Scotty.get "/examples" $ Scotty.html $ Templates.body "" Templates.examples
-    Scotty.get "/about"    $ Scotty.html $ Templates.body "" Templates.about 
+    Scotty.get "/opensearch"     $ handleOpenSearch `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
+    Scotty.get "/ajax/:page/"    $ controlAjaxResults
+    Scotty.get "/hayoo.js"       $ fromFileWithMime "hayoo.js"    "text/javascript"
+    Scotty.get "/hayoo.css"      $ fromFileWithMime "hayoo.css"   "text/css"
+    Scotty.get "/hayoo.png"      $ fromFileWithMime "hayoo.png"   "image/png"
+    Scotty.get "/favicon.ico"    $ fromFileWithMime "favicon.ico" "image/x-icon"
+    Scotty.get "/examples"       $ Scotty.html $ Templates.body "" Templates.examples
+    Scotty.get "/about"          $ Scotty.html $ Templates.body "" Templates.about 
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()

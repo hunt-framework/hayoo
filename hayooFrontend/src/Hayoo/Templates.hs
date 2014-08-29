@@ -38,12 +38,12 @@ contextUrl :: H.Query -> TS.Text
 contextUrl q = hayooQueryUrl 0 $ printQuery q
 
 render :: Routes -> [(TS.Text, TS.Text)] -> TS.Text
-render Home _ = "/"
-render HayooJs _ = "/hayoo.js"
-render HayooCSS _ = "/hayoo.css"
+render Home _         = "/"
+render HayooJs _      = "/hayoo.js"
+render HayooCSS _     = "/hayoo.css"
 render Autocomplete _ = "/autocomplete"
-render Examples _ = "/examples"
-render About _ = "/about"
+render Examples _     = "/examples"
+render About _        = "/about"
 
 renderTitle :: Text -> Text
 renderTitle q
@@ -67,6 +67,7 @@ header q = [Hamlet.hamlet|
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="search" title="Hayoo! Haskell API Search" href="opensearch.xml" type="application/opensearchdescription+xml"/>
+    <link rel="icon" href="/favicon.ico">
     <script>
         var currentQuery = "#{q}"
 |]
@@ -77,7 +78,7 @@ navigation q = [Hamlet.hamlet|
 
     <div .navbar-header .navbar-left>
         <a href=@{Home}>
-            <img .logo src="/download/hayoo.png" alt="Hayoo! logo" >
+            <img .logo src="/hayoo.png" alt="Hayoo! logo" >
         <button type="button" .navbar-toggle data-toggle="collapse" data-target="#hayoo-navbar-collapse">
             <span .sr-only>Toggle navigation
             <span .icon-bar>
