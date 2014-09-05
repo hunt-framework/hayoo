@@ -265,7 +265,8 @@ handleSignatureQuery q
           )                            -- throw away too simple queries
           . either (const []) ((:[]))  -- throw away parser errors
           . parseNormSignature         -- try to parse q as signature
-          $ cs q
+          . cs
+          $ removeQuotes q
 
     subSigs :: [Signature]
     subSigs = concatMap (complexSignatures 1 . subSignatures) sig
@@ -305,11 +306,22 @@ handleSignatureQuery q
         &&
         null stdq = [ qAnds                -- build a default query (AND)
                       . map qWordNoCase
-                      $ Text.words q          -- from the list of words
+                      . map removeQuotes
+                      $ Text.words q       -- from the list of words
                     ]
       | otherwise = []
 
-
+removeQuotes :: Text -> Text
+removeQuotes t
+  | Text.null t        = t
+  | Text.head t == '"'
+    &&
+    Text.last t == '"' = Text.dropAround (== '"') t
+  | Text.head t == '\''
+    &&
+    Text.last t == '\'' = Text.dropAround (== '\'') t
+  | otherwise           = t
+                          
 isSignatureQuery :: Text -> Bool
 isSignatureQuery q
   = "->" `isInfixOf` q

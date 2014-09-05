@@ -1,11 +1,9 @@
 
 # disable prarallel builds.
 .NOTPARALLEL:
-	
 
 DEFAULT_PROFOPTS = --enable-executable-profiling --enable-library-profiling --ghc-option=-auto-all --ghc-option=-caf-all
 DEFAULT_RUNPOPTS  = +RTS -xc
-
 
 export PROF=0
 
@@ -28,9 +26,10 @@ all:
 sandbox: ../hunt
 	cd hayooLib       && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
 	cd hayooFrontend  && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
+	cd hayooIndexer   && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
 	cd ../hunt/ && cabal sandbox add-source ../hayoo/hayooLib 
 
-install: hayooLib-install hayooFrontend-install
+install: hayooLib-install hayooFrontend-install hayooIndexer-install
 
 clean:
 	cd hayooLib       && cabal clean
@@ -71,8 +70,12 @@ hayooFrontend/examples.html: Examples.md
 hayooLib-install: 
 	cd hayooLib       && cabal install
 
+hayooIndexer-install: 
+	cd hayooIndexer   && cabal install
+
 binary-package:
 	cd hayooFrontend       && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)
+	cd hayooIndexer        && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)
 	cd ../hunt/hunt-server && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo) 
 	tar --transform 's,^tmp/hayoo/,,S' -czf hayoo.tar.gz /tmp/hayoo/
 
