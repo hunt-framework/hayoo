@@ -63,6 +63,7 @@ executable hayooIndexer
                  , mtl                    >= 2
                  , murmur-hash
                  , network                >= 2.1
+                 , network-uri            >= 2.1
                  , old-time               >= 1
                  , old-locale             >= 1
                  , parsec                 >= 2.1

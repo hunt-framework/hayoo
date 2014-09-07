@@ -36,6 +36,7 @@ library
                        , string-conversions >= 0.3
                        , text
                        , network            >= 2.4
+                       , network-uri        >= 2.4
 
   default-language:    Haskell2010
 
