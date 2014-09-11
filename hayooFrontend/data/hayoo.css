@@ -69,9 +69,10 @@ footer {
   position: absolute;
   bottom: 0;
   width: 100%;
-  /* Set the fixed height of the footer here */
   height: 60px;
   background-color: #f5f5f5;
+  text-align:center;
+  padding:10px;
 }
 
 #hayoo {
@@ -85,14 +86,14 @@ footer {
 
 pre {
   font-size: small;
-  color: grey;  
+  color: grey;
 }
 
 code {
   font-size: small;
-  color: grey;  
+  color: grey;
 }
 
 .result-subtitle{
-  font-size: small;  
+  font-size: small;
 }
