@@ -27,11 +27,15 @@ flag network-uri
 library
   hs-source-dirs: src
   exposed-modules:   Hayoo.ParseSignature
+                     Hayoo.Haskell
+                     Hayoo.Signature
                      Hayoo.Url
   -- other-modules:
   -- other-extensions:
 
   build-depends:         base               >= 4.6 && < 5
+                       , containers
+                       , haskell-src-exts   >= 0.16
                        , http-types         >= 0.8
                        , hunt-searchengine
                        , hxt-charproperties >= 9
@@ -57,6 +61,8 @@ test-suite Parser
 --  extensions:           OverloadedStrings
 
   build-depends: base
+               , containers
+               , haskell-src-exts
 --               , containers
                , mtl
                , HUnit

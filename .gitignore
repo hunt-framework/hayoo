@@ -12,3 +12,4 @@ cabal-dev
 hayooFrontend/about.html
 hayooFrontend/examples.html
 TAGS
+.DS_Store
