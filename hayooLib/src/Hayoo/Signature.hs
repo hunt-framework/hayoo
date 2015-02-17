@@ -5,6 +5,7 @@ module Hayoo.Signature(
   , pretty
   , normalize
   , explode
+  , explodeNormalized
   , explodeWithComplexity
   , fromType
   , complexity
