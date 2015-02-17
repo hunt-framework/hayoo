@@ -83,7 +83,6 @@ import           Text.Read                   (readMaybe)
 
 import qualified Web.Scotty.Trans            as Scotty
 
--- import           Hayoo.ParseSignature
 import           Hayoo.Signature (Signature)
 import qualified Hayoo.Signature as Signature
 import qualified Data.Set as Set
