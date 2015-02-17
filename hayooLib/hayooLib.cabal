@@ -26,8 +26,7 @@ flag network-uri
 
 library
   hs-source-dirs: src
-  exposed-modules:   Hayoo.ParseSignature
-                     Hayoo.Haskell
+  exposed-modules:   Hayoo.Haskell
                      Hayoo.Signature
                      Hayoo.Url
   -- other-modules:
