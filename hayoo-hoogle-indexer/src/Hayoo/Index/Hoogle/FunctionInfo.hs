@@ -79,7 +79,7 @@ toFunctionInfo mkUri packageName version d =
   where
     signature = maybe "" Signature.pretty $ do
       sig <- factSignature d
-      return (Signature.normalize sig)
+      return sig
 
     subsignatures =
       List.intercalate "\n" (mkSubsignatures signature)
@@ -87,5 +87,5 @@ toFunctionInfo mkUri packageName version d =
 mkSubsignatures :: String -> [String]
 mkSubsignatures s = do
   signature    <- either (const mzero) return (Signature.parse s)
-  subsignature <- Foldable.toList (Signature.explode signature)
+  subsignature <- Foldable.toList (Signature.explodeNormalized signature)
   return (Signature.pretty subsignature)
