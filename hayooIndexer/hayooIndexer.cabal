@@ -30,6 +30,7 @@ executable hayooIndexer
                  , Hayoo.PackageArchive
                  , Hayoo.PackageInfo
                  , Hayoo.PackageRank
+                 , Hayoo.ParseSignature
                  , Hayoo.Signature
                  , Hayoo.URIConfig
 
