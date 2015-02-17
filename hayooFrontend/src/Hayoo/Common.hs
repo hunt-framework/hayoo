@@ -83,7 +83,10 @@ import           Text.Read                   (readMaybe)
 
 import qualified Web.Scotty.Trans            as Scotty
 
-import           Hayoo.ParseSignature
+-- import           Hayoo.ParseSignature
+import           Hayoo.Signature (Signature)
+import qualified Hayoo.Signature as Signature
+import qualified Data.Set as Set
 
 -- ------------------------------------------------------------
 
@@ -257,19 +260,19 @@ handleSignatureQuery q
     qu = qOrs $ concat [stdq, sigq, defq]
 
     isSig = isSignatureQuery q
-    
+
     sig :: [Signature]
     sig = ( if isSig
             then id
             else complexSignatures 3
           )                            -- throw away too simple queries
           . either (const []) ((:[]))  -- throw away parser errors
-          . parseNormSignature         -- try to parse q as signature
+          . Signature.parseNormalized  -- try to parse q as signature
           . cs
           $ removeQuotes q
 
     subSigs :: [Signature]
-    subSigs = concatMap (complexSignatures 1 . subSignatures) sig
+    subSigs = concatMap (complexSignatures 1 . Set.toList . Signature.explode) sig
 
     subSigq :: [Query]
     subSigq
@@ -280,20 +283,20 @@ handleSignatureQuery q
                        . qAnds
                        . map ( qFullWord  -- exact case sensitive word search
                                . cs       -- sub signatures must be found in sub signature context
-                               . prettySignature
+                               . Signature.pretty
                              )
                        $ subSigs
-                         
+
     sig1q :: [Query]
     sig1q = map ( setContexts ["signature"]
                   . qWord             -- case sensitive prefix search
                   . cs                -- convert to Text
-                  . prettySignature   -- convert Signature into String
+                  . Signature.pretty  -- convert Signature into String
                 ) sig
 
     sigq :: [Query]
     sigq = map (\ q' -> qOrs $ q' : subSigq) sig1q
-      
+
     stdq :: [Query]
     stdq
       | isSig     = []
@@ -311,6 +314,9 @@ handleSignatureQuery q
                     ]
       | otherwise = []
 
+complexSignatures :: Int -> [Signature] -> [Signature]
+complexSignatures c = filter ((c <=) . Signature.complexity)
+
 removeQuotes :: Text -> Text
 removeQuotes t
   | Text.null t        = t
@@ -321,7 +327,7 @@ removeQuotes t
     &&
     Text.last t == '\'' = Text.dropAround (== '\'') t
   | otherwise           = t
-                          
+
 isSignatureQuery :: Text -> Bool
 isSignatureQuery q
   = "->" `isInfixOf` q
@@ -439,4 +445,3 @@ modName :: String
 modName = "HayooFrontend"
 
 -- -------------------------------
-
