@@ -28,7 +28,7 @@ hayooQuery q' = qOrs (concat [stdq, sigq, defq])
           . either (const []) (:[])  -- throw away parser errors
           . Signature.parse          -- try to parse q as signature
           . Text.unpack
-          . removePartialSignature
+          . stripPartialTypeSignature
           $ removeQuotes q
 
     subSigs :: [Signature]
@@ -93,6 +93,14 @@ removeQuotes t
     Text.last t == '\'' = Text.dropAround (== '\'') t
   | otherwise           = t
 
-removePartialSignature :: Text -> Text
-removePartialSignature t = Maybe.fromMaybe t $
-  Text.stripSuffix "->" t <|> Text.stripSuffix "-" t
+stripPartialTypeSignature :: Text -> Text
+stripPartialTypeSignature s =
+  case strip (Text.strip s) of
+    Just s' -> stripPartialTypeSignature s'
+    Nothing -> s
+  where
+    strip t = Text.stripSuffix "->" t
+              <|> Text.stripSuffix "-" t
+              <|> Text.stripSuffix "(" t
+              <|> Text.stripSuffix "[" t
+              <|> Text.stripSuffix "," t
