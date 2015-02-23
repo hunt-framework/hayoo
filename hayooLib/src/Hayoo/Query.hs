@@ -55,7 +55,7 @@ hayooQuery q' = qOrs (concat [stdq, sigq, defq])
                 ) sig
 
     sigq :: [Query]
-    sigq = map (\ q' -> qOrs $ q' : subSigq) sig1q
+    sigq = map (\ q' -> qOrs $ subSigq ++ return q') sig1q
 
     stdq :: [Query]
     stdq
