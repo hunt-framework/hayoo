@@ -29,6 +29,7 @@ c'module       = "module"
 c'name         = "name"
 c'package      = "package"
 c'partial      = "partial"
+c'displaySignature = "disp-signature"
 c'signature    = "signature"
 c'source       = "source"
 c'subsig       = "subsig"
@@ -36,6 +37,7 @@ c'synopsis     = "synopsis"
 c'type         = "type"
 c'upload       = "upload"
 c'version      = "version"
+
 
 d'author, d'category, d'dependencies, d'description, d'homepage, d'indexed,
   d'maintainer, d'module, d'name, d'package, d'signature, d'source,
@@ -92,6 +94,7 @@ hayooIndexSchema
       , mkIC c'upload       . setCxWeight 1.0 . setCxRegEx dr      . setCxNoDefault . setCxDate
       , mkIC c'version      . setCxWeight 1.0 . setCxRegEx ".*"    . setCxNoDefault
 
+      , mkIC c'displaySignature . setCxWeight w'signature . setCxRegEx reSig . setCxNoDefault
       , mkIC c'signature    . setCxWeight w'signature  . setCxRegEx reSig . setCxNoDefault
       , mkIC c'subsig       . setCxWeight w'subsig     . setCxRegEx reSig . setCxNoDefault
       ]

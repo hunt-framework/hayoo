@@ -35,7 +35,7 @@ where
 
 import           GHC.Generics                (Generic)
 
-import           Control.Applicative         (Applicative, (<$>))
+import           Control.Applicative
 import           Control.Exception           (Exception)
 import           Control.Exception.Lifted    (Handler (..), catches)
 --import           Control.Failure (Failure, failure)
@@ -157,12 +157,15 @@ parseNonPackageResult :: AesonScore -> Object -> Text -> Text -> Text -> ResultT
 parseNonPackageResult score descr baseUri n d t = do
     p  <- descr .:? "package"   .!= "unknown"
     m  <- descr .:? "module"    .!= "[]"
-    s  <- descr .:? "signature" .!= ""
+    s  <- signature
     c  <- descr .:? "source"    .!= ""
 --    u <- baseUri -- unparsedUri
     let mods :: [Text]
         mods = maybe [m] id (readMaybe $ cs m)
     return $ NonPackageResult score  baseUri p mods n s d c t
+  where
+    signature =
+      descr .: "disp-signature" <|> descr .: "signature" <|> pure ""
 
 parseSearchResult :: Value -> Parser SearchResult
 parseSearchResult (Object v) = do

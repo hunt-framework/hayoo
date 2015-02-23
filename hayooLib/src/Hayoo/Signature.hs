@@ -1,6 +1,7 @@
 module Hayoo.Signature(
     Signature
   , parse
+  , stripConstraints
   , parseNormalized
   , pretty
   , normalize
@@ -140,6 +141,12 @@ parse s = Signature <$> Haskell.parse s
 
 parseNormalized :: String -> Either String Signature
 parseNormalized s = normalize <$> parse s
+
+stripConstraints :: Signature -> Signature
+stripConstraints = Signature . go . unSignature
+  where
+    go (TyForall _ _ t) = t
+    go t                = t
 
 pretty :: Signature -> String
 pretty = Haskell.pretty . unSignature

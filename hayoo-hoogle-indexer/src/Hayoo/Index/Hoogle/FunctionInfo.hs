@@ -21,15 +21,16 @@ type ModuleName = String
 type Anchor = String
 
 data FunctionInfo = FunctionInfo {
-    fiDescription :: !Text
-  , fiModule      :: !Text
-  , fiName        :: !Text
-  , fiPackage     :: !Text
-  , fiSignature   :: !Text
-  , fiSubsigs     :: !Text
-  , fiType        :: !Text
-  , fiVersion     :: !Text
-  , fiURI         :: !Text
+    fiDescription      :: !Text
+  , fiModule           :: !Text
+  , fiName             :: !Text
+  , fiPackage          :: !Text
+  , fiSignature        :: !Text
+  , fiDisplaySignature :: !Text
+  , fiSubsigs          :: !Text
+  , fiType             :: !Text
+  , fiVersion          :: !Text
+  , fiURI              :: !Text
   } deriving (Show)
 
 instance Hunt.Huntable FunctionInfo where
@@ -49,6 +50,7 @@ toList fi = filter (not . Text.null . snd) [
   , c'name        * fiName fi
   , c'package     * fiPackage fi
   , c'signature   * fiSignature fi
+  , c'displaySignature * fiDisplaySignature fi
   , c'subsig      * fiSubsigs fi
   , c'type        * fiType fi
   , c'version     * fiVersion fi
@@ -66,20 +68,24 @@ toFunctionInfo :: MkURI (Inst Fact)
                -> [FunctionInfo]
 toFunctionInfo mkUri packageName version d =
   return FunctionInfo {
-      fiURI         = Text.pack $ mkUri packageName version (factModule d) d haddockAnchor
-    , fiDescription = Text.pack $ factDescription d
-    , fiModule      = Text.pack $ factModule d
-    , fiName        = Text.pack $ factName d
-    , fiPackage     = Text.pack $ packageName
-    , fiVersion     = Text.pack $ version
-    , fiSignature   = Text.pack $ signature
-    , fiSubsigs     = Text.pack $ subsignatures
-    , fiType        = Text.pack $ factType d
+      fiURI              = Text.pack $ mkUri packageName version (factModule d) d haddockAnchor
+    , fiDescription      = Text.pack $ factDescription d
+    , fiModule           = Text.pack $ factModule d
+    , fiName             = Text.pack $ factName d
+    , fiPackage          = Text.pack $ packageName
+    , fiVersion          = Text.pack $ version
+    , fiSignature        = Text.pack $ signature
+    , fiDisplaySignature = Text.pack $ displaySignature
+    , fiSubsigs          = Text.pack $ subsignatures
+    , fiType             = Text.pack $ factType d
     }
   where
+    displaySignature = maybe "" Signature.pretty $ do
+      factSignature d
+
     signature = maybe "" Signature.pretty $ do
       sig <- factSignature d
-      return sig
+      return (Signature.stripConstraints sig)
 
     subsignatures =
       List.intercalate "\n" (mkSubsignatures signature)
