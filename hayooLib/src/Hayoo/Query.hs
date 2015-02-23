@@ -4,6 +4,8 @@ module Hayoo.Query (
   , isSignatureQuery
   ) where
 
+import           Control.Applicative
+import           Data.Maybe as Maybe
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -12,8 +14,10 @@ import qualified Hayoo.Signature as Signature
 import           Hunt.ClientInterface
 
 hayooQuery :: Text -> Query
-hayooQuery q = qOrs (concat [stdq, sigq, defq])
+hayooQuery q' = qOrs (concat [stdq, sigq, defq])
   where
+    q = Text.strip q'
+
     isSig = isSignatureQuery q
 
     sig :: [Signature]
@@ -21,9 +25,10 @@ hayooQuery q = qOrs (concat [stdq, sigq, defq])
             then id
             else complexSignatures 3
           )                            -- throw away too simple queries
-          . either (const []) ((:[]))  -- throw away parser errors
+          . either (const []) (:[])  -- throw away parser errors
           . Signature.parseNormalized  -- try to parse q as signature
           . Text.unpack
+          . removePartialSignature
           $ removeQuotes q
 
     subSigs :: [Signature]
@@ -87,3 +92,7 @@ removeQuotes t
     &&
     Text.last t == '\'' = Text.dropAround (== '\'') t
   | otherwise           = t
+
+removePartialSignature :: Text -> Text
+removePartialSignature t = Maybe.fromMaybe t $
+  Text.stripSuffix "->" t <|> Text.stripSuffix "-" t
