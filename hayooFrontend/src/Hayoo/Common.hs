@@ -36,13 +36,13 @@ where
 import           GHC.Generics                (Generic)
 
 import           Control.Applicative         (Applicative, (<$>))
-import           Control.Exception           (Exception, throwIO)
+import           Control.Exception           (Exception)
 import           Control.Exception.Lifted    (Handler (..), catches)
 --import           Control.Failure (Failure, failure)
 import           Control.Monad.Base          (MonadBase, liftBase,
                                               liftBaseDefault)
 import           Control.Monad.Catch         (MonadThrow)
-import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Monad.IO.Class      (MonadIO)
 import           Control.Monad.Reader        (MonadReader, ReaderT, ask,
                                               runReaderT)
 import           Control.Monad.Trans.Class   (MonadTrans, lift)
@@ -58,35 +58,27 @@ import           Data.Aeson.Types            (Parser)
 import           Data.Data                   (Data)
 import           Data.Scientific             (Scientific)
 import           Data.String                 (IsString, fromString)
-import           Data.String.Conversions     (cs, (<>))
-import           Data.Text                   (Text, isInfixOf, replace, splitOn,
+import           Data.String.Conversions     (cs)
+import           Data.Text                   (Text, replace, splitOn,
                                               strip)
-import qualified Data.Text                   as Text
 import           Data.Typeable               (Typeable)
 --import           Data.Vector ((!))
 
-import           Hunt.ClientInterface        (Context, Query, qAnd, qAnds,
-                                              qContext, qOr, qOrs, qPhrase,
-                                              qWord, qWordNoCase, qFullWord,
-                                              setContexts, setBoost)
+import           Hunt.ClientInterface        (Context, Query, qAnd,
+                                              qContext, qOrs, qPhrase,
+                                              qWord,
+                                              setContexts)
 import qualified Hunt.ClientInterface        as H
 import qualified Hunt.Server.Client          as H
 
-import           Hunt.Query.Language.Parser  (parseQuery)
 
 import           Network.HTTP.Conduit        (HttpException)
-
-import qualified System.Log.Logger           as Log (debugM)
 
 import           Text.Parsec                 (ParseError)
 import           Text.Read                   (readMaybe)
 
 import qualified Web.Scotty.Trans            as Scotty
 
-import qualified Data.List as List
-import qualified Data.Set as Set
-import           Hayoo.Signature (Signature)
-import qualified Hayoo.Signature as Signature
 import           Hayoo.Query
 
 -- ------------------------------------------------------------
@@ -247,29 +239,6 @@ withServerAndManager' x = do
     sm <- ask
     H.withServerAndManager sm x
 
-{-
-handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m Query
-handleSignatureQuery q
-    | isSignatureQuery q = do
-        s <- sig
-        liftIO $ Log.debugM modName ("Signature Query: " <> (cs q) <> " >>>>>> " <> (show s))
-        return s
-
-    | otherwise = normalQuery
-        where
-        sig = case parseSignature $ cs q of
-            (Right s) -> return sigQ
-                where
-                    q1 = ["signature"]  `setContexts` (qWord $ cs $ prettySignature s)
-                    q2 = ["normalized"] `setContexts` (qWord $ cs $ prettySignature $ fst $ normalizeSignature s)
-                    sigQ = qOr q2 q1
-            (Left err) -> liftIO $ throwIO $ ParseError err
-
-        normalQuery = case parseQuery (cs q) of
-            (Right q') -> return q'
-            (Left err) -> liftIO $ throwIO $ StringException err
--- -}
-
 handleSignatureCompletionResults :: Text -> Query -> [Text] -> [Text]
 handleSignatureCompletionResults txt q comps
     | isSignatureQuery txt = comps
@@ -353,7 +322,5 @@ data HayooConfiguration = HayooConfiguration {
     huntUrl   :: String
 } deriving (Show, Data, Typeable)
 
-modName :: String
-modName = "HayooFrontend"
 
 -- -------------------------------
