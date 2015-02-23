@@ -43,7 +43,7 @@ toList pd = filter (not . Text.null . snd) [
     (d'author, pdAuthor pd)
   , (d'category, pdCategory pd)
   , (d'dependencies, pdDependencies pd)
-  , (d'description, pdDescription pd)
+  , (d'synopsis, pdSynopsis pd)
   , (d'maintainer, pdMaintainer pd)
   , (d'name, pdName pd)
   , (d'version, pdVersion  pd)
