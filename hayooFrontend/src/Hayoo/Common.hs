@@ -83,9 +83,11 @@ import           Text.Read                   (readMaybe)
 
 import qualified Web.Scotty.Trans            as Scotty
 
+import qualified Data.List as List
+import qualified Data.Set as Set
 import           Hayoo.Signature (Signature)
 import qualified Hayoo.Signature as Signature
-import qualified Data.Set as Set
+import           Hayoo.Query
 
 -- ------------------------------------------------------------
 
@@ -245,94 +247,6 @@ withServerAndManager' x = do
     sm <- ask
     H.withServerAndManager sm x
 
-
--- ------------------------------------------------------------
---
--- Query handling
-
-handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m Query
-handleSignatureQuery q
-  = do liftIO $ Log.debugM modName ("handleSignature in=" <> (cs q) <> ", out=" <> show qu)
-       return qu
-  where
-    qu :: Query
-    qu = qOrs $ concat [stdq, sigq, defq]
-
-    isSig = isSignatureQuery q
-
-    sig :: [Signature]
-    sig = ( if isSig
-            then id
-            else complexSignatures 3
-          )                            -- throw away too simple queries
-          . either (const []) ((:[]))  -- throw away parser errors
-          . Signature.parseNormalized  -- try to parse q as signature
-          . cs
-          $ removeQuotes q
-
-    subSigs :: [Signature]
-    subSigs = concatMap (complexSignatures 1 . Set.toList . Signature.explode) sig
-
-    subSigq :: [Query]
-    subSigq
-      | null subSigs = []
-      | otherwise    = (:[])
-                       . setBoost 0.1    -- results of sub signature queries have a reduced score
-                       . setContexts ["subsig"]
-                       . qAnds
-                       . map ( qFullWord  -- exact case sensitive word search
-                               . cs       -- sub signatures must be found in sub signature context
-                               . Signature.pretty
-                             )
-                       $ subSigs
-
-    sig1q :: [Query]
-    sig1q = map ( setContexts ["signature"]
-                  . qWord             -- case sensitive prefix search
-                  . cs                -- convert to Text
-                  . Signature.pretty  -- convert Signature into String
-                ) sig
-
-    sigq :: [Query]
-    sigq = map (\ q' -> qOrs $ q' : subSigq) sig1q
-
-    stdq :: [Query]
-    stdq
-      | isSig     = []
-      | otherwise = either (const []) (:[])   -- throw away errors
-                    $ parseQuery (cs q)       -- try to parse q as hunt query
-
-    defq :: [Query]
-    defq
-      | null sigq                          -- if both query parsers fail,
-        &&
-        null stdq = [ qAnds                -- build a default query (AND)
-                      . map qWordNoCase
-                      . map removeQuotes
-                      $ Text.words q       -- from the list of words
-                    ]
-      | otherwise = []
-
-complexSignatures :: Int -> [Signature] -> [Signature]
-complexSignatures c = filter ((c <=) . Signature.complexity)
-
-removeQuotes :: Text -> Text
-removeQuotes t
-  | Text.null t        = t
-  | Text.head t == '"'
-    &&
-    Text.last t == '"' = Text.dropAround (== '"') t
-  | Text.head t == '\''
-    &&
-    Text.last t == '\'' = Text.dropAround (== '\'') t
-  | otherwise           = t
-
-isSignatureQuery :: Text -> Bool
-isSignatureQuery q
-  = "->" `isInfixOf` q
-    ||
-    "=>" `isInfixOf` q
-
 {-
 handleSignatureQuery :: (Monad m, MonadIO m) => Text -> m Query
 handleSignatureQuery q
@@ -359,19 +273,18 @@ handleSignatureQuery q
 handleSignatureCompletionResults :: Text -> Query -> [Text] -> [Text]
 handleSignatureCompletionResults txt q comps
     | isSignatureQuery txt = comps
-    | otherwise          = H.printQuery <$> H.completeQueries q comps
-
+    | otherwise            = H.printQuery <$> H.completeQueries q comps
 
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
-    q' <- handleSignatureQuery q
-    handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.postAutocomplete q')
+  handleSignatureCompletionResults q q' <$> withServerAndManager' (H.postAutocomplete q')
+  where
+    q' = hayooQuery q
 
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
-    q' <- handleSignatureQuery q
-    withServerAndManager' $ H.postQuery q' (p * 20)
+    withServerAndManager' $ H.postQuery (hayooQuery q) (p * 20)
 
 -- ------------------------------
 
