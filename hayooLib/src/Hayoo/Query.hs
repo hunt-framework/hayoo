@@ -26,7 +26,7 @@ hayooQuery q' = qOrs (concat [stdq, sigq, defq])
             else complexSignatures 3
           )                            -- throw away too simple queries
           . either (const []) (:[])  -- throw away parser errors
-          . Signature.parseNormalized  -- try to parse q as signature
+          . Signature.parse          -- try to parse q as signature
           . Text.unpack
           . removePartialSignature
           $ removeQuotes q
