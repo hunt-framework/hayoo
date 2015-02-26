@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Hayoo.Index.Cabal.PackageInfo where
 
-import           Data.Aeson (object, Value(..), (.=), toJSON)
+import           Data.Aeson (object, Value(..), (.=))
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map as Map
 import           Data.Text (Text)
@@ -15,8 +15,6 @@ import qualified Distribution.Text as Cabal
 import           Hayoo.Index.IndexSchema
 import qualified Hunt.ClientInterface as Hunt
 import qualified Hunt.Common.DocDesc as Hunt
-
-import Debug.Trace
 
 type Error = String
 
@@ -101,5 +99,4 @@ dependencies = fmap Text.pack . fmap toPkg
     toPkg (Cabal.Dependency pkg _) = Cabal.display pkg
 
 libModules :: Cabal.Library -> [Text]
-libModules = fmap (Text.pack . Cabal.display)
-             . Cabal.libModules
+libModules = fmap (Text.pack . Cabal.display) . Cabal.libModules
