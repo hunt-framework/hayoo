@@ -14,8 +14,8 @@ import System.Locale (defaultTimeLocale)
 c'author, c'category, c'dependencies, c'description, c'hierarchy, c'homepage,
   c'indexed, c'maintainer, c'module, c'name,
   c'partial, c'package, c'signature, c'source,
-  c'subsig,
-  c'synopsis, c'type, c'upload, c'version :: Text
+  c'subsig, c'displaySignature,
+  c'synopsis, c'type, c'upload, c'version, c'modules :: Text
 
 c'author       = "author"
 c'category     = "category"
@@ -37,11 +37,11 @@ c'synopsis     = "synopsis"
 c'type         = "type"
 c'upload       = "upload"
 c'version      = "version"
-
+c'modules      = "modules"
 
 d'author, d'category, d'dependencies, d'description, d'homepage, d'indexed,
   d'maintainer, d'module, d'name, d'package, d'signature, d'source,
-  d'synopsis, d'type, d'upload, d'uris, d'version, d'rank :: Text
+  d'synopsis, d'type, d'upload, d'uris, d'version, d'rank, d'modules :: Text
 
 d'author       = c'author
 d'category     = c'category
@@ -61,6 +61,7 @@ d'type         = c'type
 d'upload       = c'upload
 d'uris         = "uris"
 d'version      = c'version
+d'modules      = c'modules
 
 createHayooIndexSchema :: Command
 createHayooIndexSchema
@@ -85,6 +86,7 @@ hayooIndexSchema
       , mkIC c'indexed      . setCxWeight 1.0 . setCxRegEx dr      . setCxNoDefault . setCxDate
       , mkIC c'maintainer   . setCxWeight 1.0                      . setCxNoDefault
       , mkIC c'module       . setCxWeight 0.5 . setCxRegEx ".*"
+      , mkIC c'modules      . setCxWeight 1.0 . setCxRegEx "[^ ]*" . setCxNoDefault
       , mkIC c'name         . setCxWeight 3.0 . setCxRegEx "[^ ]*"
       , mkIC c'package      . setCxWeight 1.0 . setCxRegEx ".*"
       , mkIC c'partial      . setCxWeight 0.2 . setCxRegEx "[^ ]*"
