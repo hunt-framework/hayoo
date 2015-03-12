@@ -44,7 +44,6 @@ executable hayooFrontend
                      , cmdargs        >= 0.10
                      , containers     >= 0.5
                      , exceptions     >= 0.6
-                     , hamlet         >= 1.1   && < 1.2
                      , hayooLib
                      , http-conduit   >= 2.0.0
                      , http-types     >= 0.8 && < 0.9
@@ -57,8 +56,8 @@ executable hayooFrontend
                      , mtl            >= 2.1
                      , parsec         >= 3.1   && < 4
                      , scientific     >= 0.2
-                     , scotty         >= 0.8.1  && < 0.9
-                     , shakespeare-js >= 1.2
+                     , scotty         >= 0.8.1  && < 1.0
+                     , shakespeare    >= 1.2
                      , string-conversions     >= 0.3.0.2
                      , text           >= 1     && < 2
                      , transformers   >= 0.3
