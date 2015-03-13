@@ -6,3 +6,5 @@ type ModuleName = String
 type Anchor = String
 
 type MkURI a = PackageName -> Version -> ModuleName -> a -> (a -> Anchor) -> String
+
+type MkRank = PackageName -> Float

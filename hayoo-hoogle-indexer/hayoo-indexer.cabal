@@ -26,14 +26,18 @@ executable hayoo-indexer
                      , conduit
                      , conduit-combinators
                      , containers
+                     , deepseq
                      , exceptions
                      , filepath
                      , haskell-src-exts
                      , hayooLib
                      , hunt-client
                      , hunt-searchengine
+                     , mmorph
+                     , mtl
                      , old-locale
                      , optparse-applicative
+                     , primitive
                      , split
                      , tar
                      , text
@@ -50,5 +54,5 @@ executable hayoo-indexer
                        -funbox-strict-fields
                        -O2
                        -threaded
-                       -rtsopts 
-                       "-with-rtsopts=-N -I0 -A32m"
+                       -rtsopts
+                       "-with-rtsopts=-N -K100M -A8M -H100M -I0"

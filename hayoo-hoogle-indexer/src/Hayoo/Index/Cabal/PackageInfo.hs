@@ -19,17 +19,17 @@ import qualified Hunt.Common.DocDesc as Hunt
 type Error = String
 
 data PackageDescription = PackageDescription {
-    pdName         :: Text
-  , pdVersion      :: Text
-  , pdUri          :: Text
-  , pdAuthor       :: Text
-  , pdCategory     :: Text
-  , pdDependencies :: [Text]
-  , pdHomepage     :: Text
-  , pdMaintainer   :: Text
-  , pdSynopsis     :: Text
-  , pdDescription  :: Text
-  , pdModules      :: [Text]
+    pdName         :: !Text
+  , pdVersion      :: !Text
+  , pdUri          :: !Text
+  , pdAuthor       :: !Text
+  , pdCategory     :: !Text
+  , pdDependencies :: ![Text]
+  , pdHomepage     :: !Text
+  , pdMaintainer   :: !Text
+  , pdSynopsis     :: !Text
+  , pdDescription  :: !Text
+  , pdModules      :: ![Text]
   } deriving (Eq, Show)
 
 instance Hunt.Huntable PackageDescription where

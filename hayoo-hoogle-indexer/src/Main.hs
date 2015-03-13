@@ -3,22 +3,30 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import Control.Concurrent.Async
-import Data.Text (pack)
 import Hayoo.Index.Cabal
 import Hayoo.Index.Hoogle
 import Hayoo.Index.IndexSchema
+import Hayoo.Index.PackageRank
+
+import Conduit
+import Control.Monad.State.Strict
+import Control.Monad.Morph
+import Data.Aeson (encode)
+import Data.Text (pack)
+import Hunt.Conduit
 import Hunt.Server.Client
 import Options.Applicative
+import qualified Data.Map.Strict as Map
 
 data Options = Options {
-    hackageBase :: String
+    hackageBase   :: String
   , hoogleArchive :: FilePath
   , indexArchive  :: FilePath
-  , huntServer    :: String
+  , output        :: Output
   }
 
-strOption' x a = strOption x <|> pure a
+data Output = OutHunt String
+            | OutJson
 
 indexerOptions =
   Options <$> strOption (
@@ -33,34 +41,51 @@ indexerOptions =
     long "index"
     <> metavar "FILE"
     <> help "Hackage index.tar.gz"
-    ) <*> strOption' (
-    long "hunt-url"
-    <> metavar "URI"
-    <> help "Uri to hunt-server"
-    ) "http://localhost:3000"
+    ) <*> output
+  where
+    output =
+      OutHunt `fmap` strOption (
+        long "hunt-url"
+        <> metavar "URI"
+        <> help "Uri to hunt-server"
+      )
+      <|>
+      const OutJson `fmap` switch (
+        long "json"
+        <> help "Output Hunt commands as json to stdout"
+      )
 
 main :: IO ()
 main = do
   options <- execParser opts
-  sam     <- newServerAndManager (pack (huntServer options))
 
-  let processHoogleArchive =
-        indexHoogleArchive (
-          mkHaddockUri (hackageBase options)) (hoogleArchive options)
+  let hackageUri = mkHackageUri (hackageBase options)
+      haddockUri = mkHaddockUri (hackageBase options)
 
-  let processCabalArchive =
-        indexCabalArchive (
-          mkHackageUri (hackageBase options)) (indexArchive options)
+      mkRank r p = Map.findWithDefault 1.0 (pack p) r
 
-  withServerAndManager sam $ do
-    _ :: String <- postCommand dropHayooIndexSchema
-    _ :: String <- postCommand createHayooIndexSchema
-    return ()
-
-  _ <- concurrently
-       (withServerAndManager sam processCabalArchive)
-       (withServerAndManager sam processHoogleArchive)
-  return ()
+  case output options of
+    OutJson -> do
+      let pipe = indexCabalArchive hackageUri (indexArchive options)
+                =$= mapC encode
+                =$= unlinesAsciiC
+                $$ stdoutC
+      rk <- rankingStd <$> execStateT pipe []
+      indexHoogleArchive haddockUri (mkRank rk) (hoogleArchive options)
+        =$= mapC encode
+        =$= unlinesAsciiC
+        $$ stdoutC
+      return ()
+    OutHunt uri -> do
+      sam <- newServerAndManager (pack uri)
+      withServerAndManager sam $ do
+        _ :: String <- postCommand dropHayooIndexSchema
+        _ :: String <- postCommand createHayooIndexSchema
+        let pipe = indexCabalArchive hackageUri (indexArchive options)
+                   $$ (hoist lift cmdSink)
+        rk <- rankingStd <$> execStateT pipe []
+        indexHoogleArchive  haddockUri (mkRank rk) (hoogleArchive options) $$ cmdSink
+      return ()
   where
     opts = info (helper <*> indexerOptions)
            (fullDesc

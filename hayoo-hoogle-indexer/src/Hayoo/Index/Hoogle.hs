@@ -1,3 +1,4 @@
+{-# LANGUAGE Rank2Types #-}
 module Hayoo.Index.Hoogle (
     Fact
   , Inst
@@ -6,15 +7,18 @@ module Hayoo.Index.Hoogle (
   , indexHoogleArchive
   ) where
 
+import           Hayoo.Index.Conduit
+import           Hayoo.Index.Hoogle.FunctionInfo
+import           Hayoo.Index.Hoogle.Parser1
+import           Hayoo.Index.Hoogle.Types
+
 import           Conduit
+import           Control.Monad.Primitive
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as ByteString
 import           Data.Function (on)
 import qualified Data.List as List
 import           Data.Monoid
-import           Hayoo.Index.Conduit
-import           Hayoo.Index.Hoogle.FunctionInfo
-import           Hayoo.Index.Hoogle.Parser1
 import           Hunt.ClientInterface
 import           Hunt.Conduit
 import           Hunt.Server.Client
@@ -43,26 +47,30 @@ mkHaddockUri base package version module_ decl anchor =
                        '.' -> '-'
                        _   -> c) module_
 
-indexHoogleArchive :: MkURI (Inst Fact) -> FilePath -> HuntConnectionT IO ()
-indexHoogleArchive mkUri fp = do
+indexHoogleArchive :: (MonadIO m, MonadBase b m, PrimMonad b)
+                   => MkURI (Inst Fact)
+                   -> MkRank
+                   -> FilePath
+                   -> Producer m Command
+indexHoogleArchive mkUri mkRank fp = do
   archive <- liftIO $ ByteString.readFile fp
   compressedArchive archive
-    =$= functionInfos mkUri
+    =$= functionInfos mkUri mkRank
     =$= leftLogger "hoogle:"
     =$= makeInserts toApiDocument
     =$= rechunkCommands 50
-    $$ cmdSink
 
 functionInfos :: Monad m
               => MkURI (Inst Fact)
-              ->  Conduit (FilePath, ByteString) m (Either (Line Error) FunctionInfo)
-functionInfos mkUri = concatMapC go
+              -> MkRank
+              -> Conduit (FilePath, ByteString) m (Either (Line Error) FunctionInfo)
+functionInfos mkUri mkRank = concatMapC go
   where
     go (fp, content) =
       let
         (package:version:_) = splitDirectories fp
         (insts, errors)     = parseHoogle (utf8 content)
-        infos               = functionInfo mkUri package version insts
+        infos               = functionInfo mkUri mkRank package version insts
         dedupe              = List.nubBy ((==) `on` fiURI) infos
         dispError err       = package ++ "-" ++ version ++ ": " ++ err
       in

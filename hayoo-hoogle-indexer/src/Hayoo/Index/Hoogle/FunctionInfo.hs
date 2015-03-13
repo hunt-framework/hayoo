@@ -12,13 +12,13 @@ import qualified Data.Text as Text
 import qualified Hayoo.Signature as Signature
 import qualified Hunt.ClientInterface as Hunt
 import qualified Hunt.Common.DocDesc as Hunt
+import qualified Hunt.Scoring.Score as Hunt
+import           Hunt.Common.ApiDocument
+
+
 import           Hayoo.Index.IndexSchema
 import           Hayoo.Index.Hoogle.Parser1
-
-type PackageName = String
-type Version = String
-type ModuleName = String
-type Anchor = String
+import           Hayoo.Index.Hoogle.Types
 
 data FunctionInfo = FunctionInfo {
     fiDescription      :: !Text
@@ -31,6 +31,7 @@ data FunctionInfo = FunctionInfo {
   , fiType             :: !Text
   , fiVersion          :: !Text
   , fiURI              :: !Text
+  , fiRank             :: !Float
   } deriving (Show)
 
 instance Hunt.Huntable FunctionInfo where
@@ -41,7 +42,12 @@ instance Hunt.Huntable FunctionInfo where
                  . toList
   huntIndexMap = Map.fromList . toList
 
-type MkURI a = PackageName -> Version -> ModuleName -> a -> (a -> Anchor) -> String
+  toApiDocument  x = ApiDocument
+                      { adUri   = Hunt.huntURI x
+                      , adIndex = Hunt.huntIndexMap x
+                      , adDescr = Hunt.huntDescr x
+                      , adWght  = Hunt.mkScore (fiRank x)
+                      }
 
 toList :: FunctionInfo -> [(Text, Text)]
 toList fi = filter (not . Text.null . snd) [
@@ -58,15 +64,22 @@ toList fi = filter (not . Text.null . snd) [
   where
     (*) = (,)
 
-functionInfo :: MkURI (Inst Fact) -> PackageName -> Version -> [Inst Fact] -> [FunctionInfo]
-functionInfo mkUri package version = concatMap (toFunctionInfo mkUri package version)
+functionInfo :: MkURI (Inst Fact)
+             -> MkRank
+             -> PackageName
+             -> Version
+             -> [Inst Fact]
+             -> [FunctionInfo]
+functionInfo mkUri mkRank package version =
+  concatMap (toFunctionInfo mkUri mkRank package version)
 
 toFunctionInfo :: MkURI (Inst Fact)
+               -> MkRank
                -> PackageName
                -> Version
                -> Inst Fact
                -> [FunctionInfo]
-toFunctionInfo mkUri packageName version d =
+toFunctionInfo mkUri mkRank packageName version d =
   return FunctionInfo {
       fiURI              = Text.pack $ mkUri packageName version (factModule d) d haddockAnchor
     , fiDescription      = Text.pack $ factDescription d
@@ -78,6 +91,7 @@ toFunctionInfo mkUri packageName version d =
     , fiDisplaySignature = Text.pack $ displaySignature
     , fiSubsigs          = Text.pack $ subsignatures
     , fiType             = Text.pack $ factType d
+    , fiRank             = mkRank packageName
     }
   where
     displaySignature = maybe "" Signature.pretty $ do
