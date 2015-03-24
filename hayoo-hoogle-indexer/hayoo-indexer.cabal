@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 executable hayoo-indexer
   main-is:             Main.hs
   -- other-modules:
-  build-depends:       Cabal >= 1.22
+  build-depends:       Cabal >= 1.18
                      , aeson
                      , async
                      , base >=4.7 && <4.8
