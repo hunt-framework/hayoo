@@ -65,9 +65,8 @@ hayooGetPkgTitle                = fromLA $
 getPkgName                      :: LA XmlTree String
 getPkgName                      = getHtmlTitle
                                   >>^
-                                  ( -- select the package name, the 2. word in title
+                                  ( -- select the package name, the 1. word in title
                                     words
-                                    >>> drop 1
                                     >>> take 1
                                     >>> unwords
 
@@ -83,7 +82,12 @@ getPkgName                      = getHtmlTitle
 getPkgSynopsis                  :: LA XmlTree String
 getPkgSynopsis                  = getHtmlTitle
                                   >>^
-                                  ( words >>> drop 2 >>> unwords )
+                                  ( words >>> drop 1
+                                    >>>
+                                    reverse >>> drop 2 >>> reverse
+                                    >>>
+                                    unwords
+                                  )
 
 getPkgVersion                   :: LA XmlTree String
 getPkgVersion                   = getAllText
