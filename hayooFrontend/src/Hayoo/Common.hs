@@ -218,17 +218,31 @@ type HayooAction = Scotty.ActionT HayooException HayooServer
 instance (MonadBase b m) => MonadBase b (HayooServerT m) where
     liftBase = liftBaseDefault
 
+#if MIN_VERSION_monad_control(1,0,0)
+-- from http://hackage.haskell.org/package/monad-control-1.0.0.4/docs/src/Control-Monad-Trans-Control.html
+instance MonadTransControl (HayooServerT) where
+    type StT (HayooServerT) a = StT (ReaderT H.ServerAndManager) a
+    liftWith = defaultLiftWith HayooServerT runHayooServerT
+    restoreT = defaultRestoreT HayooServerT
+
+-- From http://hackage.haskell.org/package/monad-control-1.0.0.4/docs/src/Control-Monad-Trans-Control.html
+instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where
+    type StM (HayooServerT m) a = ComposeSt (HayooServerT) m a
+    liftBaseWith = defaultLiftBaseWith
+    restoreM     = defaultRestoreM
+#else
 -- from http://hackage.haskell.org/package/monad-control-0.3.2.3/docs/src/Control-Monad-Trans-Control.html
 instance MonadTransControl (HayooServerT) where
     newtype StT (HayooServerT) a = StHayooServerT {unStHayooServerT :: StT (ReaderT H.ServerAndManager) a }
     liftWith = defaultLiftWith HayooServerT runHayooServerT StHayooServerT
     restoreT = defaultRestoreT HayooServerT unStHayooServerT
 
--- From http://hackage.haskell.org/package/monad-control-0.3.2.3/docs/src/Control-Monad-Trans-Control.html
+-- from http://hackage.haskell.org/package/monad-control-0.3.2.3/docs/src/Control-Monad-Trans-Control.html
 instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where
     newtype StM (HayooServerT m) a = StMHayooServer {unStMHayooServer :: ComposeSt (HayooServerT) m a}
     liftBaseWith = defaultLiftBaseWith StMHayooServer
     restoreM     = defaultRestoreM   unStMHayooServer
+#endif
 
 runHayooReader :: HayooServerT m a -> H.ServerAndManager -> m a
 runHayooReader = runReaderT . runHayooServerT

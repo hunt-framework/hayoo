@@ -35,6 +35,9 @@ N       = 1
 ifeq ($(HOST),holumbus)
 N       = 2
 endif
+ifeq ($(HOST),mecki)
+N       = 2
+endif
 
 H       = 100
 A       = 8
