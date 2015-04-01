@@ -11,7 +11,6 @@ module Hayoo.Index.PackageRank
 --    , dagToList
 --    , ranking
     , rankingStd
-    , d1
     )
 where
 
