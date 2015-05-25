@@ -35,9 +35,6 @@ existing Holumbus framework.
 Both projects were developed at the [FH Wedel](http://fh-wedel.de) under supervision and active support of
 [Prof. Dr. Uwe Schmidt](http://fh-wedel.de/~si).
 
-The old [Hayoo][hayoo-alt] and [Holumbus][holumbus-alt] are still online.
-
-
 [huntsearch]: http://huntsearch.org "huntsearch.org"
 [hackage]: http://hackage.haskell.org/ "Hackage"
 [hayoo-issues]: https://github.com/hunt-framework/hayoo/issues "Hayoo Issues"
