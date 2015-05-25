@@ -15,7 +15,7 @@ else
     RUNPOPTS=
 endif
 
-.PHONY: all clean  
+.PHONY: all clean
 
 all:
 	@echo "usage:"
@@ -27,7 +27,7 @@ sandbox: ../hunt
 	cd hayooLib       && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
 	cd hayooFrontend  && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
 	cd hayooIndexer   && cabal sandbox init --sandbox ../../hunt/.cabal-sandbox
-	cd ../hunt/ && cabal sandbox add-source ../hayoo/hayooLib 
+	cd ../hunt/ && cabal sandbox add-source ../hayoo/hayooLib
 
 install: hayooLib-install hayooFrontend-install hayooIndexer-install
 
@@ -51,7 +51,7 @@ first-install: sandbox install
 hayooFrontend-configure:
 	cd hayooFrontend && cabal configure $(PROFOPTS)
 
-hayooFrontend-install: hayooFrontend/about.html hayooFrontend/examples.html 
+hayooFrontend-install: hayooFrontend/about.html hayooFrontend/examples.html
 	cd hayooFrontend && cabal install $(PROFOPTS)
 
 hayooFrontend-build: hayooFrontend/about.html hayooFrontend/examples.html
@@ -67,16 +67,16 @@ hayooFrontend/about.html: README.md
 hayooFrontend/examples.html: Examples.md
 	pandoc -t html -o hayooFrontend/examples.html Examples.md
 
-hayooLib-install: 
+hayooLib-install:
 	cd hayooLib       && cabal install
 
-hayooIndexer-install: 
+hayooIndexer-install:
 	cd hayooIndexer   && cabal install
 
 binary-package:
 	cd hayooFrontend       && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)
 	cd hayooIndexer        && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)
-	cd ../hunt/hunt-server && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo) 
+	cd ../hunt/hunt-server && (cabal configure --prefix=/usr/local && cabal build && cabal copy --destdir=/tmp/hayoo)
 	tar --transform 's,^tmp/hayoo/,,S' -czf hayoo.tar.gz /tmp/hayoo/
 
 index/hayoo.index.tar.gz:

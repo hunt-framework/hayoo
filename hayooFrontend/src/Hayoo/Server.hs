@@ -49,7 +49,7 @@ start config = do
 
     Scotty.scottyOptsT options runM runActionToIO $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
-        dispatcher   
+        dispatcher
 
 fromFileWithMime :: FilePath -> TL.Text -> Scotty.ActionT HayooException HayooServer ()
 fromFileWithMime path mime = do
@@ -71,18 +71,18 @@ dispatcher = do
     Scotty.get "/hayoo.png"      $ fromFileWithMime "hayoo.png"   "image/png"
     Scotty.get "/favicon.ico"    $ fromFileWithMime "favicon.ico" "image/x-icon"
     Scotty.get "/examples"       $ Scotty.html $ Templates.body "" Templates.examples
-    Scotty.get "/about"          $ Scotty.html $ Templates.body "" Templates.about 
+    Scotty.get "/about"          $ Scotty.html $ Templates.body "" Templates.about
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
-handleAutocomplete = do 
+handleAutocomplete = do
     q <- Scotty.param "term"
     value <- autocomplete q
     Scotty.setHeader "Access-Control-Allow-Origin" "*"
     Scotty.json value
 
 handleOpenSearch :: HayooAction ()
-handleOpenSearch = do 
+handleOpenSearch = do
     q <- Scotty.param "term"
     value <- autocomplete q
     Scotty.setHeader "Access-Control-Allow-Origin" "*"
@@ -90,7 +90,7 @@ handleOpenSearch = do
 
 getPage :: HayooAction Int
 getPage = do
-    params <- Scotty.params 
+    params <- Scotty.params
     return $ maybe 0 id $ do
         page <- lookup "page" params
         page' <- readMaybe $ cs page
@@ -104,7 +104,7 @@ controlAjaxResults = do
     Scotty.html $ Templates.ajax $ Templates.renderBoxedResults results
 
 controlSimpleHtmlResults :: HayooAction ()
-controlSimpleHtmlResults = controlResults render def handleException 
+controlSimpleHtmlResults = controlResults render def handleException
     where
         render :: TL.Text -> LimitedResult SearchResult -> HayooAction ()
         render q r = Scotty.html $ Templates.body q (Templates.resultContent r)
@@ -119,10 +119,10 @@ controlResults repr emptyRepr exceptionHandler = do
     page <- getPage
     case lookup "query" params of
         (Just q) -> do
-            let 
+            let
             ((query (cs q) page) >>= repr (cs q)) `Scotty.rescue`  exceptionHandler (cs q)
         Nothing -> emptyRepr
-    
+
 hayooExceptionToStatus :: HayooException -> Status
 hayooExceptionToStatus ParseError{} = ok200
 hayooExceptionToStatus FileNotFound{} = notFound404
@@ -132,7 +132,7 @@ handleException :: TL.Text -> HayooException -> HayooAction ()
 handleException q e = do
     Scotty.status $ hayooExceptionToStatus e
     Scotty.html $ Templates.body q $ Templates.renderException e
-            
+
 -- | Set the body of the response to the given 'T.Text' value. Also sets \"Content-Type\"
 -- header to \"text/html\".
 javascript :: (Scotty.ScottyError e, Monad m) => T.Text -> Scotty.ActionT e m ()

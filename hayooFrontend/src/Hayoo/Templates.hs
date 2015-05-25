@@ -53,7 +53,7 @@ renderTitle q
 header :: Text -> Hamlet.HtmlUrl Routes
 header q = [Hamlet.hamlet|
   <head>
-  
+
     <title>#{renderTitle q}
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js">
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js">
@@ -61,10 +61,10 @@ header q = [Hamlet.hamlet|
 
     <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js">
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <link href=@{HayooCSS} rel="stylesheet">
     <script src=@{HayooJs}>
-    
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="search" title="Hayoo! Haskell API Search" href="opensearch.xml" type="application/opensearchdescription+xml"/>
     <link rel="icon" href="/favicon.ico">
@@ -84,7 +84,7 @@ navigation q = [Hamlet.hamlet|
             <span .icon-bar>
             <span .icon-bar>
             <span .icon-bar>
-       
+
     <div .navbar-collapse .collapse #hayoo-navbar-collapse>
         <ul .nav .navbar-nav .navbar-left>
             <li .active>
@@ -104,26 +104,28 @@ navigation q = [Hamlet.hamlet|
 footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
 <footer id="footer">
-    <a href=@{Home}> Hayoo Frontend
-    &copy; 2014 Sebastian Philipp | Powered by 
-    <a href="https://github.com/hunt-framework/hunt">
+    <a href=@{Home}>
+      Hayoo Frontend &copy; 2014 Sebastian Philipp
+    <br />
+      Powered by
+      <a href="https://github.com/hunt-framework/hunt">
         Hunt
-    |
-    <a href="https://github.com/hunt-framework/hayoo">
+      |
+      <a href="https://github.com/hunt-framework/hayoo">
         Github
 |]
 
-body :: Text -> Hamlet.HtmlUrl Routes -> T.Text 
+body :: Text -> Hamlet.HtmlUrl Routes -> T.Text
 body q content = T.pack $ Blaze.renderHtml $ [Hamlet.hamlet|
 $doctype 5
 <html lang="en">
     ^{header q}
     <body>
         ^{navigation q}
-        
+
         <div .container>
             ^{content}
-        
+
         ^{footer}
 |] render
 
@@ -133,7 +135,7 @@ packageUrl r = cs $ hackagePackage $ resultPackage r
 moduleUrl :: SearchResult -> Text
 moduleUrl r = cs $ hackageModule $ resultUri r
 
-ajax :: Hamlet.HtmlUrl Routes -> T.Text 
+ajax :: Hamlet.HtmlUrl Routes -> T.Text
 ajax content = T.pack $ Blaze.renderHtml $ content render
 
 -- ---------------------------------
@@ -177,12 +179,12 @@ renderBoxedResultHeading r@(PackageResult {}) = [Hamlet.hamlet|
 renderBoxedResult :: SearchResult -> Hamlet.HtmlUrl Routes
 renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderBoxedResultHeading result} 
+    ^{renderBoxedResultHeading result}
     <div .panel-body>
         <p .result-subtitle>
             <a href="#{packageUrl result}">
                 #{resultPackage result}
-            - 
+            -
             $forall m <- resultModules result
                 <a href="#{moduleUrl result}">
                     #{m}
@@ -193,7 +195,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
 
 renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
 <div .panel .panel-default>
-    ^{renderBoxedResultHeading result} 
+    ^{renderBoxedResultHeading result}
     <div .panel-body>
         <div .description .more>
             #{escapeScript resultSynopsis result}
@@ -203,16 +205,23 @@ renderBoxedResults :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
 --renderBoxedResults r = error $ show $ H.lrResult r
 renderBoxedResults results = [Hamlet.hamlet|
 <div #results>
-    $forall r <- H.lrResult results
+    $if (H.lrCount results == 0)
+      <div .alert .alert-danger>
+        No results found
+    $else
+      $forall r <- H.lrResult results
         ^{renderBoxedResult r}
 |]
 
 resultContent :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
 resultContent results = [Hamlet.hamlet|
 ^{renderBoxedResults results}
-<div>
+$if (H.lrCount results > 0)
+  <div>
     <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
         Next Page
+$else
+  
 |]
 
 renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
@@ -244,33 +253,35 @@ renderDropdown r = renderDropdown' qs'
         where
         namedQueries = map (\q -> (contextQueryName q, contextUrl $ contextQueryToQuery q r)) qs
 
-    
-    
+
+
 
 
 renderPagination :: Text -> H.LimitedResult a -> Hamlet.HtmlUrl Routes
 renderPagination query' lr = [Hamlet.hamlet|
-<ul .pagination>
-  $if isFirstPage
+$if (H.lrCount lr > 0)
+  <ul .pagination>
+    $if isFirstPage
       <li .disabled>
           <span>&laquo;
-  $else
+    $else
       <li>
           <a href="#{currentUrl query' leftArrowPage}">&laquo;
-  $forall page <- pages
+    $forall page <- pages
       $if page == currentPage
           <li .disabled>
               <span>#{page + 1}
       $else
           <li>
               <a href="#{currentUrl query' page}">#{page + 1}
-  $if isLastPage
+    $if isLastPage
       <li .disabled>
           <span>&raquo;
-  $else
+    $else
       <li>
           <a href="#{currentUrl query' rightArrowPage}">&raquo;
-          
+$else
+  
 |]
     where
         isFirstPage = currentPage == 0
@@ -281,44 +292,44 @@ renderPagination query' lr = [Hamlet.hamlet|
 
         firstPagerPage = (currentPage - 2) `max` 0
         lastPagerPage = ((currentPage + 2) `max` 5) `min` lastPage
-        leftArrowPage = (firstPagerPage - 3) `max` 0 
-        rightArrowPage = (lastPagerPage + 3) `min` lastPage 
+        leftArrowPage = (firstPagerPage - 3) `max` 0
+        rightArrowPage = (lastPagerPage + 3) `min` lastPage
         pages = [firstPagerPage .. lastPagerPage]
-        
+
 
 renderException :: HayooException -> Hamlet.HtmlUrl Routes
 renderException (StringException e) =  [Hamlet.hamlet|
 <div .alert .alert-danger>
     <strong>
-        Internal Error: 
+        Internal Error:
     #{e}
 |]
 
 renderException (HuntClientException e) =  [Hamlet.hamlet|
 <div .alert .alert-warning>
     <strong>
-        Internal Error: 
+        Internal Error:
     #{show e}
 |]
 
 renderException (HttpException e) =  [Hamlet.hamlet|
 <div .alert .alert-danger>
     <strong>
-        Connection Error: 
+        Connection Error:
     #{show e}
 |]
 
 renderException (ParseError e) =  [Hamlet.hamlet|
 <div .alert .alert-info>
     <strong>
-        Parse Error: 
+        Parse Error:
     #{show e}
 |]
 
 renderException FileNotFound = [Hamlet.hamlet|
 <div .alert .alert-info>
     <strong>
-        404: 
+        404:
     File Not Found.
 |]
 
