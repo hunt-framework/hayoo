@@ -21,6 +21,7 @@ data-files:          hayoo.css
                      opensearch.xml
                      favicon.ico
                      hayoo.png
+                     hayoo2.png
 
 source-repository head
   type:        git

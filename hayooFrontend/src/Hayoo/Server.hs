@@ -69,6 +69,7 @@ dispatcher = do
     Scotty.get "/hayoo.js"       $ fromFileWithMime "hayoo.js"    "text/javascript"
     Scotty.get "/hayoo.css"      $ fromFileWithMime "hayoo.css"   "text/css"
     Scotty.get "/hayoo.png"      $ fromFileWithMime "hayoo.png"   "image/png"
+    Scotty.get "/hayoo2.png"     $ fromFileWithMime "hayoo2.png"   "image/png"
     Scotty.get "/favicon.ico"    $ fromFileWithMime "favicon.ico" "image/x-icon"
     Scotty.get "/examples"       $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about"          $ Scotty.html $ Templates.body "" Templates.about

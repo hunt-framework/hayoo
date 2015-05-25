@@ -71,14 +71,14 @@ header q = [Hamlet.hamlet|
     <script>
         var currentQuery = "#{q}"
 |]
-
+{--
 navigation :: Text -> Hamlet.HtmlUrl Routes
 navigation q = [Hamlet.hamlet|
 <div .navbar .navbar-default .navbar-static-top role="navigation">
 
     <div .navbar-header .navbar-left>
         <a href=@{Home}>
-            <img .logo src="/hayoo.png" alt="Hayoo! logo" >
+            <img .logo src="/hayoo2.png" alt="Hayoo! logo" >
         <button type="button" .navbar-toggle data-toggle="collapse" data-target="#hayoo-navbar-collapse">
             <span .sr-only>Toggle navigation
             <span .icon-bar>
@@ -91,21 +91,33 @@ navigation q = [Hamlet.hamlet|
                 <form .navbar-form .navbar-left action="." method="get" id="search" role="search">
                     <div .form-group>
                         <input .form-control placeholder="Search" name="query" #hayoo type="text" autocomplete="off" accesskey="1" value="#{q}">
-                    <input .btn .btn-default #submit type="submit" value="Search">
+                    <input .btn .btn-primary #submit type="submit" value="Search">
 
-        <ul .nav .navbar-nav .navbar-right>
-            <li>
-                <a href=@{Examples}>Examples
-            <li>
-                <a href=@{About}>About
 |]
+--}
 
+navigation :: Text -> Hamlet.HtmlUrl Routes
+navigation q = [Hamlet.hamlet|
+<div .row>
+    <div .col-xs-2>
+      <a href=@{Home}>
+        <img .logo src="/hayoo2.png" alt="Hayoo! logo" >
+    <div .col-xs-10>
+      <form .navbar-form .navbar-left action="." method="get" id="search" role="search">
+        <div .form-group .form-search-input>
+          <input .form-control  placeholder="Search" name="query" #hayoo type="text" autocomplete="off" accesskey="1" value="#{q}">
+          <input .btn .btn-primary #submit type="submit" value="Search">
+|]
 
 footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
 <footer id="footer">
     <a href=@{Home}>
       Hayoo Frontend &copy; 2014 Sebastian Philipp
+    |
+    <a href=@{Examples}>Examples
+    |
+    <a href=@{About} >About
     <br />
       Powered by
       <a href="https://github.com/hunt-framework/hunt">
@@ -121,12 +133,13 @@ $doctype 5
 <html lang="en">
     ^{header q}
     <body>
+      <div .container>
+        <hr />
         ^{navigation q}
-
-        <div .container>
+        <hr />
             ^{content}
-
-        ^{footer}
+        <hr />
+      ^{footer}
 |] render
 
 packageUrl :: SearchResult -> Text
@@ -221,7 +234,7 @@ $if (H.lrCount results > 0)
     <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
         Next Page
 $else
-  
+
 |]
 
 renderDropdown :: SearchResult -> Hamlet.HtmlUrl Routes
@@ -281,7 +294,7 @@ $if (H.lrCount lr > 0)
       <li>
           <a href="#{currentUrl query' rightArrowPage}">&raquo;
 $else
-  
+
 |]
     where
         isFirstPage = currentPage == 0
@@ -342,6 +355,17 @@ mainPage = [Hamlet.hamlet|
       Search #
       <a href="http://hackage.haskell.org/">Hackage
       \ by function, signature or package.
+  <br />
+  <p>
+    <span class="glyphicon glyphicon-hand-right icon-span">
+    How to use Yahoo!
+    <a href="@{Examples}" >
+      by Example
+  <p>
+    <span class="glyphicon glyphicon-hand-right icon-span">
+    About
+    <a href="@{About}" >
+      Hayoo!
 |]
 
 about :: Hamlet.HtmlUrl Routes
