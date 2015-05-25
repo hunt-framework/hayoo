@@ -113,7 +113,8 @@ footer :: Hamlet.HtmlUrl Routes
 footer = [Hamlet.hamlet|
 <footer id="footer">
     <a href=@{Home}>
-      Hayoo Frontend &copy; 2014 Sebastian Philipp
+      Hayoo 2.0.1 Frontend
+    &copy; 2014 Sebastian Philipp
     |
     <a href=@{Examples}>Examples
     |
