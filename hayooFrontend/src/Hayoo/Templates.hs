@@ -98,15 +98,15 @@ navigation q = [Hamlet.hamlet|
 
 navigation :: Text -> Hamlet.HtmlUrl Routes
 navigation q = [Hamlet.hamlet|
-<div .row>
-    <div .col-xs-2>
+<form action="." method="get" id="search" role="search">
+  <div .row>
+    <div .col-xs-3>
       <a href=@{Home}>
-        <img .logo src="/hayoo2.png" alt="Hayoo! logo" >
-    <div .col-xs-10>
-      <form .navbar-form .navbar-left action="." method="get" id="search" role="search">
-        <div .form-group .form-search-input>
-          <input .form-control  placeholder="Search" name="query" #hayoo type="text" autocomplete="off" accesskey="1" value="#{q}">
-          <input .btn .btn-primary #submit type="submit" value="Search">
+         <img .logo src="/hayoo2.png" alt="Hayoo! logo" >
+    <div .col-xs-7>
+      <input .form-control  placeholder="Search" name="query" #hayoo type="text" autocomplete="off" accesskey="1" value="#{q}">
+    <div .col-xs-2>
+      <input .btn .btn-primary #submit type="submit" value="Search">
 |]
 
 footer :: Hamlet.HtmlUrl Routes
@@ -230,7 +230,7 @@ resultContent :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
 resultContent results = [Hamlet.hamlet|
 ^{renderBoxedResults results}
 $if (H.lrCount results > 0)
-  <div>
+  <div .align-right>
     <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
         Next Page
 $else

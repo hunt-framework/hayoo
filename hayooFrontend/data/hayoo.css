@@ -76,7 +76,7 @@ footer {
 }
 
 #hayoo {
-  width: 300px;
+  width: 100%;
 }
 
 .more {
@@ -100,7 +100,8 @@ code {
 
 .form-search-input
 {
-  width:100%
+  width:100%;
+
 }
 
 
@@ -110,4 +111,9 @@ hr { display: block; height: 1px;
 
 .panel-body {
   background-color: #f9f9f9;
+}
+
+.align-right
+{
+  text-align:right;
 }
