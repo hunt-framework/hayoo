@@ -17,21 +17,33 @@ function makeAutocomplete() {
     });
 }
 
+function makeInstantSearch() {
+    $('#hayoo').keyup(function() {
+        var q = $(this).val();
+        $.get('/ajax/0/', { query: q }, function(result) {
+            var r = $(result);
+            makeMores(r);
+            $('#results').empty().append(r);
+        });
+    });
+}
 
-function makeMores () {
+function makeMores (target) {
     var showChar = 150;
     var maxChar = 200;
     var ellipsestext = "...";
     var moretext = "more";
     var lesstext = "less";
-    $('.more').each(function() {
+
+    var t = target ? target : document;
+    $(t).find('.more').each(function() {
         var content = $(this).html();
         var textContent = $(this).text();
 
         if(textContent.length > maxChar) {
 
             var c = textContent.substr(0, showChar);
-            
+
 
             var html = '<div class="preview">' + c + '<span class="moreelipses">'+ellipsestext+'</span>&nbsp;<a href="" class="morelink">'+moretext+'</a></span></div>'
                      + '<div class="content" style="display: none;"">' + content + '<a href="" class="lesslink">'+lesstext+'</a></div>';
@@ -40,12 +52,13 @@ function makeMores () {
 
     });
 
-    $(".morelink").click(function(){
+    $(t).find(".morelink").click(function(){
         $(this).parent().hide()
         $(this).parent().next().show()
         return false;
     });
-    $(".lesslink").click(function(){
+
+    $(t).find(".lesslink").click(function(){
         $(this).parent().hide()
         $(this).parent().prev().show()
         return false;
@@ -76,7 +89,7 @@ function makeNextPage() {
 }
 
 $().ready(function() {
-    makeAutocomplete()
+    makeInstantSearch()
 
     makeMores()
 
@@ -84,5 +97,3 @@ $().ready(function() {
 
     $("#hayoo").focus()
 });
-
-
