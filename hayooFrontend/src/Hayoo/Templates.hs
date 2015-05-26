@@ -233,7 +233,7 @@ resultContent results = [Hamlet.hamlet|
 $if ((H.lrCount results > 0) && (((H.lrMax results) * (1 + H.lrOffset results)) < (H.lrCount results)))
   <div .align-right>
     <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
-        Next Page
+        More...
 $else
 
 |]
