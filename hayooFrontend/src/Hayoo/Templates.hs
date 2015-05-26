@@ -359,7 +359,7 @@ mainPage = [Hamlet.hamlet|
   <br />
   <p>
     <span class="glyphicon glyphicon-hand-right icon-span">
-    How to use Yahoo!
+    How to use Hayoo!
     <a href="@{Examples}" >
       by Example
   <p>
