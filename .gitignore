@@ -1,5 +1,8 @@
 /hayooFrontend/cabal.sandbox.config
 dist
+.stack-work
+dist-stack
+.DS_Store
 cabal-dev
 *~
 *.o
