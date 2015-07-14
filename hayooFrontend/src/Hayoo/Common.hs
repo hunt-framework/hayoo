@@ -22,6 +22,7 @@ module Hayoo.Common
   , runHayooReader'
   , autocomplete
   , query
+  , selectPackageVersion
   , HayooConfiguration (..)
     -- -------
   , H.printQuery
@@ -111,6 +112,16 @@ type AesonScore = Scientific
 #else
 type AesonScore = Double
 #endif
+
+data PackageVersionResult
+  = PackageVersionResult Text
+
+instance FromJSON PackageVersionResult where
+  parseJSON (Object o)
+    = do (Object descr) <- o .: "description"
+         PackageVersionResult <$> descr .: "version"
+  parseJSON _
+    = fail "packageVersionResult: expected Object"
 
 data SearchResult
   = NonPackageResult
@@ -271,7 +282,7 @@ handleSignatureQuery q
     qu = qOrs $ concat [stdq, sigq, defq]
 
     isSig = isSignatureQuery q
-    
+
     sig :: [Signature]
     sig = ( if isSig
             then id
@@ -297,7 +308,7 @@ handleSignatureQuery q
                                . prettySignature
                              )
                        $ subSigs
-                         
+
     sig1q :: [Query]
     sig1q = map ( setContexts ["signature"]
                   . qWord             -- case sensitive prefix search
@@ -307,7 +318,7 @@ handleSignatureQuery q
 
     sigq :: [Query]
     sigq = map (\ q' -> qOrs $ q' : subSigq) sig1q
-      
+
     stdq :: [Query]
     stdq
       | isSig     = []
@@ -335,7 +346,7 @@ removeQuotes t
     &&
     Text.last t == '\'' = Text.dropAround (== '\'') t
   | otherwise           = t
-                          
+
 isSignatureQuery :: Text -> Bool
 isSignatureQuery q
   = "->" `isInfixOf` q
@@ -381,6 +392,21 @@ query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
     q' <- handleSignatureQuery q
     withServerAndManager' $ H.postQuery q' (p * 20)
+
+selectPackageVersion :: Text -> HayooAction (Maybe Text)
+selectPackageVersion pkgName = raiseExeptions $ do
+  lr <- withServerAndManager' (H.postCommand qry)
+  if H.lrCount lr > 0
+    then do let [PackageVersionResult v] = H.lrResult lr
+            return (Just v)
+    else return Nothing
+  where
+    qry
+      = H.setMaxResults 1
+        . H.cmdSearch
+        $ qAnds [ H.setContext "type" (qWord "package")
+                , H.setContext "name" (qWord pkgName)
+                ]
 
 -- ------------------------------
 
@@ -453,4 +479,3 @@ modName :: String
 modName = "HayooFrontend"
 
 -- -------------------------------
-

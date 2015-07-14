@@ -11,6 +11,7 @@ import           Data.String (fromString)
 import           Data.String.Conversions (cs)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import qualified Text.Blaze.Renderer.Utf8 as Blaze
 
 import           Hunt.Server.Client (newServerAndManager)
 import           Hunt.ClientInterface (LimitedResult)
@@ -66,6 +67,7 @@ dispatcher = do
     Scotty.get "/opensearch.xml" $ fromFileWithMime "opensearch.xml" "application/opensearchdescription+xml"
     Scotty.get "/opensearch"     $ handleOpenSearch `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
     Scotty.get "/ajax/:page/"    $ controlAjaxResults
+    Scotty.get "/packages/:package/badge" $ handleGetBadge
     Scotty.get "/hayoo.js"       $ fromFileWithMime "hayoo.js"    "text/javascript"
     Scotty.get "/hayoo.css"      $ fromFileWithMime "hayoo.css"   "text/css"
     Scotty.get "/hayoo.png"      $ fromFileWithMime "hayoo.png"   "image/png"
@@ -81,6 +83,16 @@ handleAutocomplete = do
     value <- autocomplete q
     Scotty.setHeader "Access-Control-Allow-Origin" "*"
     Scotty.json value
+
+handleGetBadge :: HayooAction ()
+handleGetBadge
+  = do pkg      <- Scotty.param "package"
+       mversion <- selectPackageVersion pkg
+       case mversion of
+        Nothing      -> Scotty.raise FileNotFound
+        Just version -> do
+          Scotty.setHeader "Content-Type" "image/svg+xml"
+          Scotty.raw (Blaze.renderMarkup (Templates.renderBadge version))
 
 handleOpenSearch :: HayooAction ()
 handleOpenSearch = do
@@ -141,7 +153,6 @@ javascript t = do
     Scotty.setHeader "Content-Type" "text/javascript"
     Scotty.raw $ cs t
 
-
 -- | Initializes the loggers with the given priority.
 initLoggers :: Log.Priority -> IO ()
 initLoggers level = do
@@ -163,5 +174,3 @@ defaultOptions = Options
 
 modName :: String
 modName = "HayooFrontend"
-
-
