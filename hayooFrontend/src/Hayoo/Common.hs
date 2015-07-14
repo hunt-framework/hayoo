@@ -404,8 +404,8 @@ selectPackageVersion pkgName = raiseExeptions $ do
     qry
       = H.setMaxResults 1
         . H.cmdSearch
-        $ qAnds [ H.setContext "type" (qWord "package")
-                , H.setContext "name" (qWord pkgName)
+        $ qAnds [ H.setContext "type" (qFullWord "package")
+                , H.setContext "name" (qFullWord pkgName)
                 ]
 
 -- ------------------------------
