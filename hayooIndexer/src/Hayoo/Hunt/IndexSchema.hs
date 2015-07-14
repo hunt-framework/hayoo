@@ -14,6 +14,7 @@ import           Hayoo.IndexConfig      -- TODO Hayoo.IndexConfig should import 
                                         -- the names in IndexConfig correspond to name in this module
 import           Hunt.ClientInterface
 import           System.Locale          (defaultTimeLocale)
+import           Data.String
 
 -- ------------------------------------------------------------
 
@@ -136,7 +137,7 @@ hayooIndexSchema
       d2 = "[0-9]{2}"
       ms = "-"
       cl = ":"
-      dr = pack $ concat [d4, "(", ms, d2, "(", ms, d2, "(T", d2, cl, d2, cl, d2,")?)?)?"]
+      dr = fromString $ concat [d4, "(", ms, d2, "(", ms, d2, "(T", d2, cl, d2, cl, d2,")?)?)?"]
 
 execCreateHayooIndexSchema :: (Functor m, MonadIO m) => Maybe String -> m ()
 execCreateHayooIndexSchema target
