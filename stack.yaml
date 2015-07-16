@@ -11,5 +11,5 @@ extra-deps:
   - murmur-hash-0.1.0.8
   - hxt-xpath-9.1.2.2
   - hxt-cache-9.1.0.1
-resolver: lts-2.13
+resolver: lts-2.17
 
