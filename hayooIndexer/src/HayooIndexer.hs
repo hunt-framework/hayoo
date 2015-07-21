@@ -4,6 +4,9 @@
 module Main (main)
 where
 
+-- force NewPkgIndexerCore to get compiled
+import qualified Hayoo.Hunt.NewPkgIndexerCore as ZZZ
+
 import           Codec.Compression.BZip     (compress, decompress)
 
 import           Control.Applicative        ((<$>))
