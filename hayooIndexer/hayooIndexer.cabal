@@ -39,7 +39,6 @@ executable hayooIndexer
                  , Hayoo.Hunt.IndexSchema
                  , Hayoo.Hunt.Output
                  , Hayoo.Hunt.PkgIndexerCore
-                 , Hayoo.Hunt.NewPkgIndexerCore
                  , Hayoo.Hunt.PkgRankTable
 
   build-depends:   base                   >= 4
