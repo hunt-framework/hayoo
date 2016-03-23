@@ -1,4 +1,4 @@
-name:          hayooIndexer
+name:          newHayooIndexer
 version:       3.0.0.0
 license:       MIT
 license-file:  LICENSE
@@ -44,8 +44,8 @@ executable hayooIndexer-exe
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base, optparse-applicative, hayooIndexer, directory
-  other-modules:       Paths_hayooIndexer
+  build-depends:       base, optparse-applicative, newHayooIndexer, directory
+  other-modules:       Paths_newHayooIndexer
   default-language:    Haskell2010
 
 test-suite hayooIndexer-test
@@ -53,7 +53,7 @@ test-suite hayooIndexer-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   build-depends:       base
-                     , hayooIndexer
+                     , newHayooIndexer
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

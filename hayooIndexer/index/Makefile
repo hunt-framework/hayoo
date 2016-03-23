@@ -18,8 +18,8 @@ px	= pkg.bin
 ixn	= new-$(ix)
 pxn	= new-$(px)
 
-# bindir  = $(HOME)/.cabal/bin
-bindir  = ../../../hunt/.cabal-sandbox/bin
+bindir  = $(HOME)/.local/bin
+# bindir  = ../../../hunt/.cabal-sandbox/bin
 
 indexer	= $(bindir)/hayooIndexer
 
@@ -54,15 +54,8 @@ maxpar    =500
 maxdocs   =50000
 
 all	:
-	cd .. && cabal install
-
-$(progs)	:
-	cd .. && cabal install
-
-force	:
-	rm -f $(progs)
-	cd .. && cabal clean
-	$(MAKE) all
+	[ -d ./tmp ]   || mkdir tmp
+	[ -d ./cache ] || mkdir cache
 
 whole-cache	: $(indexer)
 	@echo "load hayoo cache from hackage, all package and haddock pages are (re-)loaded,"
@@ -196,7 +189,7 @@ packages	= hxt,hxt-unicode
 
 load-cache	: $(indexer)
 	@echo load the following list of packages into local cache: $(packages)
-	@echo use "make load-cache packages=pack1,pack2,pack3" to specify the packages 
+	@echo use "make load-cache packages=pack1,pack2,pack3" to specify the packages
 	[ -d ./tmp ]   || mkdir tmp
 	[ -d ./cache ] || mkdir cache
 	$< +RTS -N$(N) -s -K100M -RTS --cache --valid=$(valid) --packages=$(packages) --xml-output=-

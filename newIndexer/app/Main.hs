@@ -2,7 +2,7 @@ module Main where
 
 import qualified MainCabal as MC
 import qualified MainHoogle as MH
-import Paths_hayooIndexer
+import Paths_newHayooIndexer
 import System.Directory (copyFile, createDirectoryIfMissing)
 import System.IO
 import Options.Applicative
@@ -28,7 +28,7 @@ opts = Opts
 
 main = execParser inf >>= main'
   where inf = info (helper <*> opts)
-                   (fullDesc 
+                   (fullDesc
                  <> progDesc "Generate index commands for Hayoo"
                  <> header "hayooIndexer - Generate index commands for Hayoo" )
 
@@ -51,4 +51,3 @@ main' options = do
   case hoogleArchive options of
     Nothing -> return ()
     Just x  -> MH.main x
-
