@@ -60,7 +60,7 @@ hayooGetFctInfo rewriteHref     = -- withTraceLevel 3 (traceDoc "hayooGetFctInfo
                                     (\ (m, (s, (p, (r, (d, t))))) -> mkFunctionInfo m s p r d t)
                                   )
     where
-      getDescr pkg               = xshow
+      getDescr pkg               = xshowEscapeXml
                                    ( hayooGetDescr
                                      >>>
                                      getChildren
