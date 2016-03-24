@@ -1,5 +1,5 @@
 name:          newHayooIndexer
-version:       3.0.0.0
+version:       3.0.1.0
 license:       MIT
 license-file:  LICENSE
 author:        Erik Rantapaa
@@ -33,14 +33,39 @@ library
                        , ProcessLine
                        , MainCabal
                        , MainHoogle
-  build-depends:       base >= 4.7 && < 5, containers, bytestring, text, binary, deepseq,
-                       unordered-containers, aeson, text-binary, time, old-locale, data-default, Cabal,
-                       transformers, tar, zlib, bzlib, pipes, pipes-parse, pretty-show, pipes-group,
-                       unordered-containers, lens, aeson-pretty, vector, scientific, mtl, parsec,
-                       hxt-charproperties, filepath, directory
+  build-depends:       base >= 4.8 && < 5
+                     , containers
+                     , bytestring
+                     , text
+                     , binary
+                     , deepseq
+                     , unordered-containers
+                     , aeson
+                     , text-binary
+                     , time
+                     , data-default
+                     , Cabal
+                     , transformers
+                     , tar
+                     , zlib
+                     , bzlib
+                     , pipes
+                     , pipes-parse
+                     , pretty-show
+                     , pipes-group
+                     , unordered-containers
+                     , lens
+                     , aeson-pretty
+                     , vector
+                     , scientific
+                     , mtl
+                     , parsec
+                     , hxt-charproperties
+                     , filepath
+                     , directory
   default-language:    Haskell2010
 
-executable hayooIndexer-exe
+executable newHayooIndexer
   hs-source-dirs:      app
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
@@ -48,7 +73,7 @@ executable hayooIndexer-exe
   other-modules:       Paths_newHayooIndexer
   default-language:    Haskell2010
 
-test-suite hayooIndexer-test
+test-suite newHayooIndexer-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs

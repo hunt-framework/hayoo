@@ -35,7 +35,7 @@ import qualified Data.Text          as Text
 
 import Control.Monad.State.Strict
 
-type LinesProducer = MonadIO m => Producer (Int, Text.Text) m ()
+type LinesProducer = forall m . MonadIO m => Producer (Int, Text.Text) m ()
 
 checkFileExists path = do
   ok <- doesFileExist path

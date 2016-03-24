@@ -1,8 +1,8 @@
 packages:
-  - ./newIndexer
   - ./hayooFrontend
   - ./hayooLib
   - ./hayooIndexer
+  - ./newHayooIndexer
   - ../hunt/hunt-client
   - ../hunt/hunt-crawler
   - ../hunt/hunt-searchengine

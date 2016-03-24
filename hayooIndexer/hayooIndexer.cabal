@@ -1,5 +1,5 @@
 name:          hayooIndexer
-version:       2.0.0.0
+version:       2.0.2.0
 license:       MIT
 license-file:  LICENSE
 author:        Uwe Schmidt
@@ -41,7 +41,7 @@ executable hayooIndexer
                  , Hayoo.Hunt.PkgIndexerCore
                  , Hayoo.Hunt.PkgRankTable
 
-  build-depends:   base                   >= 4
+  build-depends:   base                   >= 4.8
                  , aeson                  >= 0.6
                  , aeson-pretty           >= 0.7
                  , binary                 >= 0.5
