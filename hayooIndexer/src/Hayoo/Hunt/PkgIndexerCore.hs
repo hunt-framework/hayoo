@@ -5,31 +5,25 @@
 module Hayoo.Hunt.PkgIndexerCore
 where
 
-import           Control.Applicative          ((<$>))
 import           Control.DeepSeq              (NFData, rnf)
-
 import           Data.Binary                  (Binary)
 import qualified Data.Binary                  as B
 import qualified Data.StringMap.Strict        as M
 import qualified Data.Text                    as T
 import           Data.Time                    (UTCTime)
-
 import           Hayoo.Hunt.ApiDocument       (PkgDescr(PD), RankDescr, boringApiDoc, toApiDoc)
 import           Hayoo.Hunt.IndexSchema       (appendSaveCmd,
                                                c'type, c'indexed, c'name, c'partial, c'upload,
                                                d'indexed, d'package,
                                                fmtDateXmlSchema, fmtDateHTTP, parseDateHTTP)
 import           Hayoo.PackageInfo            (PackageInfo(p_uploaddate, p_rank))
-
 import           Holumbus.Crawler             (URI)
 import           Holumbus.Crawler.IndexerCore (IndexerState(..),
                                                IndexCrawlerConfig, IndexCrawlerState,
                                                IndexContextConfig,
                                                RawDoc,
                                                emptyIndexerState, indexCrawlerConfig')
-
 import           Hunt.ClientInterface          hiding (URI)
-
 import           Text.XML.HXT.Core             (IOSArrow, SysConfig, XmlTree, (***))
 
 -- ------------------------------------------------------------
@@ -42,7 +36,8 @@ type PkgIndexerState  = IndexerState       () RawDocIndex PackageInfo
 newtype RawDocIndex a = RDX (M.StringMap (RawDoc PackageInfo))
                           deriving (Show)
 
-instance NFData (RawDocIndex a)
+instance NFData (RawDocIndex a) where
+  rnf x = seq x ()
 
 instance Binary (RawDocIndex a) where
     put (RDX ix)        = B.put ix

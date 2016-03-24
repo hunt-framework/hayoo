@@ -5,10 +5,8 @@
 module Hayoo.Hunt.FctIndexerCore
 where
 
-import           Control.Applicative          ((<$>))
 import           Control.DeepSeq
 import           Control.Monad
-
 import           Data.Binary                  (Binary)
 import qualified Data.Binary                  as B
 import qualified Data.IntMap.Strict           as IM
@@ -17,7 +15,6 @@ import qualified Data.Map.Strict              as SM
 import qualified Data.StringMap.Strict        as M
 import qualified Data.Text                    as T
 import           Data.Time                    (UTCTime)
-
 import           Hayoo.FunctionInfo           (FunctionInfo(..), Fct'Type(..))
 import           Hayoo.Hunt.ApiDocument       (FctDescr(..), fiToHash, fiToPkg, toApiDoc)
 import           Hayoo.Hunt.FctRankTable      (FctRankTable, lookupRank)
@@ -27,21 +24,17 @@ import           Hayoo.Hunt.IndexSchema       (appendSaveCmd,
                                                fmtDateXmlSchema, fmtDateHTTP)
 import           Hayoo.URIConfig              (hackageGetPackage, hackagePackages,
                                                isExternalURI, isHaddockURI, isRelHaddockURI)
-
 import           Hayoo.ParseSignature         (Signature, complexSignatures,
                                                processSignatureWith,
                                                subSignatures)
 import           Hayoo.Url                    (urlForDocument)
-
 import           Holumbus.Crawler             hiding (Context)
 import           Holumbus.Crawler.IndexerCore (IndexerState(..),
                                                IndexCrawlerConfig, IndexCrawlerState,
                                                IndexContextConfig,
                                                RawDoc,
                                                emptyIndexerState, indexCrawlerConfig')
-
 import           Hunt.ClientInterface         hiding (URI)
-
 import           Text.XML.HXT.Core            (IOSArrow, SysConfig, XmlTree)
 
 -- {-
@@ -62,7 +55,8 @@ type FctIndexerState    = IndexerState       () RawDocIndex FunctionInfo
 newtype RawDocIndex a   = RDX (M.StringMap (RawDoc FunctionInfo))
                           deriving (Show)
 
-instance NFData (RawDocIndex a)
+instance NFData (RawDocIndex a) where
+  rnf x = seq x ()
 
 instance Binary (RawDocIndex a) where
     put (RDX ix)        = B.put ix

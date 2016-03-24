@@ -14,16 +14,13 @@ module Hayoo.PackageRank
     )
 where
 
-import           Control.Applicative ( (<$>) )
-import           Control.Arrow       ((>>>), (***), second)
-import           Control.DeepSeq     (NFData)
-
-import           Data.Monoid
+import           Control.Arrow   ((***), second)
+import qualified Data.List       as L
 import           Data.Map        (Map)
 import qualified Data.Map        as M
 import qualified Data.Map.Strict as SM
 import           Data.Maybe      (fromMaybe, fromJust)
-import qualified Data.List       as L
+import           Data.Monoid
 import           Data.Set        (Set)
 import qualified Data.Set        as S
 
@@ -53,7 +50,7 @@ inv (Rel (s, p))
 
 instance Eq a => Eq (Rel a) where
   (Rel r1) == (Rel r2) = fst r1 == fst r2
-  
+
 instance Ord a => Monoid (Rel a) where
   mempty
     = empty
@@ -69,7 +66,7 @@ instance (Ord a, Show a) => Show (Rel a) where
 -- ----------------------------------------
 --
 -- conversions from DAG or DAGList to list of edges
-  
+
 dagToList :: DAG a -> [(a, a)]
 dagToList = dagListToList . map (second S.toList) . SM.toList
 
@@ -82,7 +79,7 @@ dagListToList dl = [(x, y) | (x, ys) <- dl, y <- ys]
 
 empty :: Rel a
 empty = Rel (SM.empty, SM.empty)
-    
+
 singleton :: (a, a) -> Rel a
 singleton (x, y)
   = Rel ( SM.singleton x (S.singleton y)
@@ -94,7 +91,7 @@ insert (x, y)  (Rel (s, p))
   = Rel ( SM.insertWith S.union x (S.singleton y) s
         , SM.insertWith S.union y (S.singleton x) p
         )
-    
+
 fromList :: Ord a => [(a, a)] -> Rel a
 fromList
   = L.foldl' (flip insert) empty
@@ -133,7 +130,7 @@ member (x, y) (Rel r)
 
 -- --------------------
 --
--- composition of binary relations, the core op for getting performance 
+-- composition of binary relations, the core op for getting performance
 --
 -- optimization: the outer loop of the join
 -- is done over the map with the least size.
@@ -145,7 +142,7 @@ compose :: Ord a => Rel a -> Rel a -> Rel a
 compose r1@(Rel (s1, p1)) r2@(Rel (s2, p2))
   | SM.size s2 <= SM.size p1 = composeR r1 r2
   | otherwise              = composeL r1 r2
-                             
+
 composeR :: Ord a => Rel a -> Rel a -> Rel a
 composeR (Rel (s1, p1)) (Rel (s2, p2))
   = SM.foldrWithKey' ins1 empty s2  -- outer loop over succ of rel2
@@ -171,7 +168,7 @@ composeL (Rel (s1, p1)) (Rel (s2, p2))
                       ins2 z r' = S.fold ins3 r' xs
                         where
                           ins3 x r'' = insert (x, z) r''
-                          
+
 infixr 9 <.>
 (<.>) :: Ord a => Rel a -> Rel a -> Rel a
 (<.>) = compose
@@ -211,7 +208,7 @@ acyclicRelFromList = snd . L.foldl' add1 (empty, empty)
                     (cs, insert e r)
       where
         xy = singleton e
-        c1 = c  <.> xy  -- all x' connected with y via x 
+        c1 = c  <.> xy  -- all x' connected with y via x
         c2 = xy <.> c   -- all y' connected with x via y
         c3 = c1 <.> c   -- c <.> xy <.> c: all x' connected with all y' via x and y
         cs = c <> xy <> c1 <> c2 <> c3
@@ -220,7 +217,7 @@ acyclicRelFromList = snd . L.foldl' add1 (empty, empty)
 --
 -- very much the same as acyclicRelFromList
 -- but there's no Rel built
-        
+
 filterCycles :: (Ord a, Show a) => [(a, a)] -> [(a, a)]
 filterCycles = fst . filterCycles'
 
@@ -238,7 +235,7 @@ filterCycles' = (reverse *** reverse) . snd . L.foldl' add1 (empty, ([], []))
                     (rs, (e : xs, ys))
       where
         xy = singleton e
-        r1 = r  <.> xy  -- all x' connected with y via x 
+        r1 = r  <.> xy  -- all x' connected with y via x
         r2 = xy <.> r   -- all y' connected with x via y
         r3 = r1 <.> r   -- r <.> xy <.> r: all x' connected with all y' via x and y
         rs = r <> r3 <> r2 <> r1 <> xy

@@ -29,12 +29,10 @@ import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LC
 import           Data.Monoid                (Monoid(..))
 import           System.IO
-
 import qualified Data.Text                  as T
 import           Data.Text                  (Text)
 import           Data.Time                  (UTCTime)
-import           Data.Time.Format           (formatTime)
-import           System.Locale              (defaultTimeLocale)
+import           Data.Time.Format           (formatTime, defaultTimeLocale)
 import           System.Directory           (createDirectoryIfMissing)
 import           System.FilePath            (takeDirectory)
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE Rank2Types, NoMonomorphismRestriction, ScopedTypeVariables, DeriveFunctor #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module MainHoogle where
 
@@ -140,11 +141,11 @@ chunkLoop'
       -> (forall x . Producer a m x -> Producer b m x)
       -> Producer a m r
       -> Producer b m r
-chunkLoop' n action = PG.concats . PG.maps action . view (PG.chunksOf n)  
+chunkLoop' n action = PG.concats . PG.maps action . view (PG.chunksOf n)
 
 seven :: Monad m => Producer Int m ()
-seven = each [1..7::Int] 
- 
+seven = each [1..7::Int]
+
 action1 p = do
         x <- p
         liftIO $ putStrLn "I'm just a string marking end of group"
@@ -188,7 +189,7 @@ numberedChunkLoop chunkSize action p = loop numbered_chunky
    numbered_chunky = numberFrom 1 (view (PG.chunksOf chunkSize) p)
    loop free = do
      e <- runFreeT free
-     case e of 
+     case e of
        Pure r -> return r
        Free (Number m ff) -> do
          free2 <- action m ff
@@ -216,7 +217,7 @@ processHoogleBatched' scoreFn now batchSize hoogleTarPath = do
        lift $ do putStrLn $ " - " ++ pkgName
                  J.hJsonPutStr True h deleteCmd
                  processHoogle' scoreFn now (skipHeaderLBS content) h
-     
+
     action n p = do
       let path = "batch-" ++ show n ++ ".js"
       putStrLn $ "writing " ++ path
@@ -281,4 +282,3 @@ main hoogleTarPath = do
   Just scoreMap <- readScores scorePath
   let scoreFn = \pkgName -> Map.lookup pkgName scoreMap
   processHoogleBatched' scoreFn now batchSize hooglePath
-

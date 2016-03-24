@@ -4,44 +4,35 @@
 module Main (main)
 where
 
-import           Codec.Compression.BZip     (compress, decompress)
-
-import           Control.Applicative        ((<$>))
-import           Control.Monad.Error
-import           Control.Monad.IO.Class     ()
+import           Codec.Compression.BZip (compress, decompress)
+import           Control.Monad.Except
+import           Control.Monad.IO.Class ()
 import           Control.Monad.Reader
-
 import           Data.Char
 import           Data.Function.Selector
-import           Data.Time                  (getCurrentTime)
-
+import           Data.Time (getCurrentTime)
 import           Hayoo.HackagePackage
 import           Hayoo.Haddock
+import qualified Hayoo.Hunt.FctIndexerCore as FJ
+import           Hayoo.Hunt.FctRankTable
+import           Hayoo.Hunt.IndexSchema
+import           Hayoo.Hunt.Output (defaultServer, evalOkRes, outputValue)
+import qualified Hayoo.Hunt.PkgIndexerCore as PJ
+import           Hayoo.Hunt.PkgRankTable as PR
 import           Hayoo.IndexConfig
 import           Hayoo.PackageArchive
 import           Hayoo.URIConfig
-
-import qualified Hayoo.Hunt.FctIndexerCore  as FJ
-import           Hayoo.Hunt.FctRankTable
-import           Hayoo.Hunt.IndexSchema
-import           Hayoo.Hunt.Output          (defaultServer, evalOkRes,
-                                             outputValue)
-import qualified Hayoo.Hunt.PkgIndexerCore  as PJ
-import           Hayoo.Hunt.PkgRankTable    as PR
-
 import           Holumbus.Crawler
 import           Holumbus.Crawler.CacheCore
 import           Holumbus.Crawler.IndexerCore
-
 import           System.Console.GetOpt
 import           System.Environment
 import           System.Exit
 import           System.IO
-
 import           Text.XML.HXT.Cache
 import           Text.XML.HXT.Core
 import           Text.XML.HXT.Curl
-import           Text.XML.HXT.HTTP          ()
+import           Text.XML.HXT.HTTP ()
 
 
 -- ------------------------------------------------------------
@@ -143,13 +134,13 @@ withCache' sec
 
 -- ------------------------------------------------------------
 
-type HIO = ReaderT AppOpts (ErrorT String IO)
+type HIO = ReaderT AppOpts (ExceptT String IO)
 
 main :: IO ()
 main
     = do pn   <- getProgName
          args <- getArgs
-         res  <- runErrorT $ runReaderT main2 (evalOptions pn args)
+         res  <- runExceptT $ runReaderT main2 (evalOptions pn args)
          either (const exitFailure) (const exitSuccess) res
 
 -- ------------------------------------------------------------

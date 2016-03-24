@@ -1,41 +1,34 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module ProcessHoogle
 where
 
-import qualified Data.Aeson       as A
-
-import qualified Data.Text        as Text
-import qualified Data.Text.IO     as Text
-import           Data.Text           (Text)
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Lazy.Encoding as DTLE
-import qualified Data.Text.Lazy as DTL
-
-import           Pipes
-import qualified Pipes.Prelude    as P
-import           ParseHoogle      (hoogleLine)
 import           Control.Monad
-import           Text.Parsec
-
-import qualified ProcessLine      as PL
+import           Control.Monad.Except
 import           Control.Monad.State.Strict
-
-import qualified Text.Show.Pretty as PP
-
-import           Hayoo.FunctionInfo (Score, FunctionInfo(..))
-
-import qualified FctIndexerCore   as FC
-import           Data.Time        (UTCTime, getCurrentTime)
-
-import           JsonUtil         (jsonPutStr, hJsonPutStr)
-
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Char8 as BS
-import qualified Data.Map        as Map
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.Map as Map
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.IO as Text
+import qualified Data.Text.Lazy as DTL
+import qualified Data.Text.Lazy.Encoding as DTLE
+import           Data.Time (UTCTime, getCurrentTime)
+import qualified FctIndexerCore as FC
+import           Hayoo.FunctionInfo (Score, FunctionInfo(..))
+import           JsonUtil (jsonPutStr, hJsonPutStr)
+import           ParseHoogle (hoogleLine)
+import           Pipes
+import qualified Pipes.Prelude as P
+import qualified ProcessLine as PL
 import qualified System.FilePath.Posix as FP
-import Control.Monad.Error
+import           Text.Parsec
+import qualified Text.Show.Pretty as PP
 
 -- A producer which yields the lines of a file (as Text)
 -- The entire file is read strictly, so there shouldn't be any resource cleanup issues.
@@ -131,4 +124,3 @@ test4 path = do
   count <- P.fold (\x _ -> x+1) 0 id (textLines path)
   putStrLn $ path ++ ": " ++ show count
 -}
-

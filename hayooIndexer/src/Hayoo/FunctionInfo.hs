@@ -10,9 +10,8 @@ module Hayoo.FunctionInfo
     , mkFunctionInfo
     )
 where
-import           Control.Applicative ((<$>), (<*>))
-import           Control.DeepSeq     (NFData, rnf)
 
+import           Control.DeepSeq     (NFData, rnf)
 import           Data.Aeson          (ToJSON, object, toJSON, (.=))
 import           Data.Binary         (Binary (..))
 import qualified Data.Binary         as B

@@ -3,18 +3,15 @@
 module Hayoo.Hunt.IndexSchema
 where
 
-import           Control.Applicative    ()
 import           Control.Monad.IO.Class (MonadIO)
-
+import           Data.String
 import           Data.Text              (Text, pack, unpack)
-import           Data.Time              (UTCTime, formatTime, parseTime)
-
+import           Data.Time              (UTCTime, formatTime, defaultTimeLocale, parseTimeM)
 import           Hayoo.Hunt.Output      (evalOkRes, outputValue)
 import           Hayoo.IndexConfig      -- TODO Hayoo.IndexConfig should import IndexSchema
                                         -- the names in IndexConfig correspond to name in this module
 import           Hunt.ClientInterface
-import           System.Locale          (defaultTimeLocale)
-import           Data.String
+-- import           System.Locale          (defaultTimeLocale)
 
 -- ------------------------------------------------------------
 
@@ -165,7 +162,7 @@ fmtDate' fmt
     = pack . formatTime defaultTimeLocale fmt
 
 parseDateHTTP :: String -> Maybe UTCTime
-parseDateHTTP = parseTime defaultTimeLocale "%a %b %e %H:%M:%S %Z %Y"
+parseDateHTTP = parseTimeM True defaultTimeLocale "%a %b %e %H:%M:%S %Z %Y"
 
 mkSaveCmd :: UTCTime -> Command
 mkSaveCmd now = cmdStoreIndex fn

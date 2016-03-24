@@ -1,4 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module ParseHoogle
 where
@@ -219,4 +220,3 @@ removeTags str =
   if null rest1
     then str
     else before ++ " " ++ removeTags rest3
-

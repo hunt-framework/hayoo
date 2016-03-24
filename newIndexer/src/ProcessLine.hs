@@ -1,4 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module ProcessLine
 where
@@ -89,4 +90,3 @@ emitFunctionInfo next kind name signature uri = do
   fi <- makeFunctionInfo kind name signature uri
   next (name, fi)
   -- liftIO $ putStrLn $ ppShow (name, fi)
-

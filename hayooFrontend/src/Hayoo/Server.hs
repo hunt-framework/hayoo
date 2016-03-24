@@ -4,32 +4,24 @@ module Hayoo.Server where
 
 
 import           Control.Monad.IO.Class (liftIO)
--- import           Control.Applicative ((<$>))
-
 import           Data.Aeson.Types ()
 import           Data.String (fromString)
 import           Data.String.Conversions (cs)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Text.Blaze.Renderer.Utf8 as Blaze
-
 import           Hunt.Server.Client (newServerAndManager)
 import           Hunt.ClientInterface (LimitedResult)
-
 import           Network.HTTP.Types.Status (internalServerError500, Status, notFound404, ok200)
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import qualified Network.Wai.Handler.Warp as W
-
 import qualified System.Log.Logger as Log
 import qualified System.Log.Formatter as Log (simpleLogFormatter)
 import qualified System.Log.Handler as Log (setFormatter)
 import qualified System.Log.Handler.Simple as Log (streamHandler)
 import qualified System.IO as System (stdout)
-
 import           Text.Read (readMaybe)
-
 import qualified Web.Scotty.Trans as Scotty
-
 import           Hayoo.Common
 import qualified Hayoo.Templates as Templates
 import           Paths_hayooFrontend
@@ -40,15 +32,21 @@ start config = do
 
     -- Note that 'runM' is only called once, at startup.
     let runM m = runHayooReader m sm
-        runActionToIO = runM
 
     initLoggers $ optLogLevel defaultOptions
 
     Log.debugM modName "Application start"
 
-    let options = Scotty.Options {Scotty.verbose = 1, Scotty.settings = (W.defaultSettings { W.settingsPort = hayooPort config, W.settingsHost = fromString $ hayooHost config })}
+    let options =
+          Scotty.Options
+          { Scotty.verbose = 1
+          , Scotty.settings =
+              W.setPort (hayooPort config) $
+              W.setHost (fromString $ hayooHost config) $
+              W.defaultSettings
+          }
 
-    Scotty.scottyOptsT options runM runActionToIO $ do
+    Scotty.scottyOptsT options runM $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
         dispatcher
 
@@ -90,9 +88,9 @@ handleGetBadge
        mversion <- selectPackageVersion pkg
        case mversion of
         Nothing      -> Scotty.raise FileNotFound
-        Just version -> do
+        Just version' -> do
           Scotty.setHeader "Content-Type" "image/svg+xml"
-          Scotty.raw (Blaze.renderMarkup (Templates.renderBadge version))
+          Scotty.raw (Blaze.renderMarkup (Templates.renderBadge version'))
 
 handleOpenSearch :: HayooAction ()
 handleOpenSearch = do

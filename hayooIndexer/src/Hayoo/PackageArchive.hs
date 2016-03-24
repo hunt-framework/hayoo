@@ -6,24 +6,17 @@ where
 
 import qualified Codec.Archive.Tar       as Tar
 import qualified Codec.Archive.Tar.Entry as Tar
-
 import qualified Codec.Compression.GZip  as GZip (decompress)
-
-import           Control.Applicative     ((<$>))
 import           Control.Arrow           ((>>>))
 import           Control.Monad           ()
-
-import           Holumbus.Crawler        (match)
-
 import           Data.ByteString.Lazy    (ByteString)
 import qualified Data.ByteString.Lazy    as BL
 import           Data.List               (sort, nub)
-
+import           Holumbus.Crawler        (match)
 import           Network.Browser         (browse, request,
                                           setAllowRedirects, setOutHandler)
 import           Network.HTTP
 import           Network.URI             (URI, parseURI)
-
 import           System.FilePath
 import           System.Time
 

@@ -7,23 +7,17 @@
 module Hayoo.Hunt.Output
 where
 
-import           Control.Applicative        ((<$>))
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
-
 import           Data.Aeson                 (ToJSON, decode, encode)
 import           Data.Aeson.Encode.Pretty   (Config(..), encodePretty', keyOrder)
 import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LC
 import           Data.Maybe                 (fromJust)
-import           Data.Monoid                (Monoid(..))
 import           Data.Text                  (Text)
-
 import           Hunt.Interpreter.Command   (CmdError (..), CmdRes (..))
-
 import           Network.Browser            (browse, request, setOutHandler)
 import           Network.HTTP               -- (...) -- all the others
 import           Network.URI                (parseURIReference)
-
 import           System.Directory           (createDirectoryIfMissing)
 import           System.FilePath            ((</>), (<.>), splitFileName)
 
@@ -144,4 +138,3 @@ main
 -- -}
 
 -- ------------------------------------------------------------
-

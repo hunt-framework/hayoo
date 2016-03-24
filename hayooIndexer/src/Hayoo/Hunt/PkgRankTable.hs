@@ -5,8 +5,6 @@
 module Hayoo.Hunt.PkgRankTable
 where
 
-import           Control.Applicative      ((<$>))
-
 import           Data.Aeson
 import qualified Data.ByteString.Lazy     as LB
 import           Data.Map.Strict          (Map)
@@ -15,13 +13,11 @@ import           Data.Maybe               (fromMaybe)
 import           Data.Text                (Text)
 import qualified Data.Text                as T
 import           Data.Time                (UTCTime)
-
 import           Hayoo.Hunt.IndexSchema   (appendSaveCmd,
                                            c'type,
                                            d'dependencies, d'name)
 import           Hayoo.Hunt.Output        (jsonPath, outputValue)
 import           Hayoo.PackageRank        (Ranking, DAGList, rankingStd)
-
 import           Hunt.ClientInterface      hiding (URI)
 import           Hunt.Interpreter.Command  (Command (..))
 

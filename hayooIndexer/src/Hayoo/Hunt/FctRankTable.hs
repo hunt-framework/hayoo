@@ -5,18 +5,14 @@
 module Hayoo.Hunt.FctRankTable
 where
 
-import           Control.Applicative      ((<$>))
-
 import           Data.Aeson
 import qualified Data.ByteString.Lazy     as LB
 import           Data.Map.Strict          (Map)
 import qualified Data.Map.Strict          as SM
 import           Data.Text                (Text)
 import qualified Data.Text                as T
-
 import           Hayoo.Hunt.IndexSchema   (c'type)
 import           Hayoo.Hunt.Output        (outputValue)
-
 import           Hunt.ClientInterface     hiding (URI)
 import           Hunt.Interpreter.Command (Command (..))
 

@@ -10,19 +10,17 @@ module Hayoo.Templates where
 -- import           Data.Monoid (mconcat)
 
 import           Data.String.Conversions (cs)
-import           Data.Text.Lazy (Text)
 import qualified Data.Text as TS
+import           Data.Text.Lazy (Text)
 import qualified Data.Text.Lazy as T
-
-
-import           Text.Blaze (preEscapedToMarkup, toValue)
+import           Text.Blaze (toValue) -- (preEscapedToMarkup, toValue)
 import qualified Text.Blaze.Html.Renderer.String as Blaze (renderHtml)
-import           Text.Blaze.Svg.Renderer.Text (renderSvg)
 import           Text.Blaze.Svg11 ((!))
 import qualified Text.Blaze.Svg11 as S
 import qualified Text.Blaze.Svg11.Attributes as A
-import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile, shamletFile)
+import qualified Text.Hamlet as Hamlet (HtmlUrl, hamlet, hamletFile) -- , shamletFile)
 
+-- import           Text.Blaze.Svg.Renderer.Text (renderSvg)
 -- import           Network.HTTP.Types (renderQuery, simpleQueryToQuery, Query)
 
 import qualified Hunt.ClientInterface as H

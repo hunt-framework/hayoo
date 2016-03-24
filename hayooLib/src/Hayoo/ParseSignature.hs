@@ -29,8 +29,6 @@ module Hayoo.ParseSignature
     )
 where
 
-import           Control.Applicative                   ((*>), (<$>), (<*),
-                                                        (<*>))
 import           Control.Monad.Identity                (Identity)
 import           Control.Monad.State                   (State, get, put,
                                                         runState)
@@ -38,10 +36,9 @@ import           Data.Char.Properties.UnicodeCharProps (isUnicodeLl,
                                                         isUnicodeLt,
                                                         isUnicodeLu, isUnicodeN,
                                                         isUnicodeP, isUnicodeS)
-import           Data.Foldable                         (Foldable)
 import           Data.List                             (intercalate, nub)
 import           Data.String                           (IsString, fromString)
-import           Data.Traversable                      (Traversable, mapM)
+import           Data.Traversable                      (mapM)
 import           Prelude                               hiding (mapM, sequence)
 import           Text.Parsec                           (ParseError, ParsecT,
                                                         char, eof, many, many1,
@@ -430,4 +427,3 @@ modifySignatureWith func sig
 {-# DEPRECATED modifySignatureWith "Use processSignatureWith instead" #-}
 
 -- ------------------------------------------------------------
-

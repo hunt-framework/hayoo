@@ -35,11 +35,8 @@ module Hayoo.Common
 where
 
 import           GHC.Generics                (Generic)
-
-import           Control.Applicative         (Applicative, (<$>))
-import           Control.Exception           (Exception, throwIO)
+import           Control.Exception           (Exception)
 import           Control.Exception.Lifted    (Handler (..), catches)
---import           Control.Failure (Failure, failure)
 import           Control.Monad.Base          (MonadBase, liftBase,
                                               liftBaseDefault)
 import           Control.Monad.Catch         (MonadThrow)
@@ -60,31 +57,24 @@ import           Data.Data                   (Data)
 import           Data.Scientific             (Scientific)
 import           Data.String                 (IsString, fromString)
 import           Data.String.Conversions     (cs, (<>))
-import           Data.Text                   (Text, isInfixOf, replace, splitOn,
-                                              strip)
+import           Data.Text                   (Text, isInfixOf, replace, splitOn, strip)
 import qualified Data.Text                   as Text
 import           Data.Typeable               (Typeable)
---import           Data.Vector ((!))
-
+import           Hayoo.ParseSignature
 import           Hunt.ClientInterface        (Context, Query, qAnd, qAnds,
-                                              qContext, qOr, qOrs, qPhrase,
+                                              qContext, qOrs, qPhrase,
                                               qWord, qWordNoCase, qFullWord,
                                               setContexts, setBoost)
 import qualified Hunt.ClientInterface        as H
-import qualified Hunt.Server.Client          as H
-
 import           Hunt.Query.Language.Parser  (parseQuery)
-
+import qualified Hunt.Server.Client          as H
 import           Network.HTTP.Conduit        (HttpException)
-
 import qualified System.Log.Logger           as Log (debugM)
-
 import           Text.Parsec                 (ParseError)
 import           Text.Read                   (readMaybe)
-
 import qualified Web.Scotty.Trans            as Scotty
 
-import           Hayoo.ParseSignature
+--import           Control.Failure (Failure, failure)
 
 -- ------------------------------------------------------------
 

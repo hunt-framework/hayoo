@@ -1,5 +1,6 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module TestHoogle
 where
@@ -102,7 +103,7 @@ testJson path = do
 processHoogleFiles scorePath emitDeleteCmd paths = do
   Just scoreMap <- readScores scorePath
   now <- getCurrentTime
-  let scoreFn = \pkgName -> M.lookup pkgName scoreMap 
+  let scoreFn = \pkgName -> M.lookup pkgName scoreMap
   forM_ paths $ \path -> do
     putStrLn $ "processing " ++ path
     processHoogleFile scoreFn now emitDeleteCmd path
@@ -120,16 +121,15 @@ removeDupURIs = PL.evalStateP Set.empty (for cat go)
 processHoogleFile scoreFn now emitDeleteCmd path = do
   let pkgName = dropExtension $ takeBaseName path
       jsonPath = "json/" ++ pkgName ++ ".js"
-  fh <- openFile jsonPath WriteMode 
+  fh <- openFile jsonPath WriteMode
   hPutStrLn fh "["
   if emitDeleteCmd
     then hJsonPutStr True fh (buildDelete pkgName)
     else hJsonPutStr True fh buildNOOP
   evalHState $ skipHeader path
-                 >-> toHoogleLine 
+                 >-> toHoogleLine
                  >-> toFunctionInfo
                  >-> removeDupURIs
                  >-> toCommands scoreFn now
                  >-> emitCommaJson fh
   hPutStrLn fh "]"
-
