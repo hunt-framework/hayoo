@@ -51,7 +51,7 @@ RUNOPTS = +RTS -N$(N) -s -K$(K)M -A$(A)M -H$(H)M -I0 -RTS
 
 partition =500
 maxpar    =500
-maxdocs   =50000
+maxdocs   =75000
 
 all	:
 	[ -d ./tmp ]   || mkdir tmp
@@ -92,7 +92,7 @@ JSERV	= --json-server=$(JHOST)/  --json-maxsave=1000
 # --valid=d is the duration for which the local cache with the hackage pages
 # is valid, --valid=0 leads to a total refresh of the cache
 
-OPTS1	= --maxdocs=50000 --maxthreads=1 --json-maxpkg=200
+OPTS1	= --maxdocs=75000 --maxthreads=1 --json-maxpkg=200
 OPTS0	= $(OPTS1) --valid=$(validix)
 
 jserv-schema	:
