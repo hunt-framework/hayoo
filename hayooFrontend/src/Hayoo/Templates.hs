@@ -206,7 +206,7 @@ renderBoxedResult result@(NonPackageResult {}) = [Hamlet.hamlet|
                     #{m}
                 &nbsp;
         <div .description .more>
-            #{S.toMarkup $ escapeScript resultDescription result}
+            #{S.preEscapedToMarkup $ escapeScript resultDescription result}
 |]
 
 renderBoxedResult result@(PackageResult {}) = [Hamlet.hamlet|
