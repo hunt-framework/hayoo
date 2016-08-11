@@ -60,7 +60,6 @@ executable hayooIndexer
                  , hxt                    >= 9.1
                  , hxt-cache              >= 9
                  , hxt-charproperties     >= 9
-                 , hxt-curl               >= 9
                  , hxt-http               >= 9
                  , hxt-regex-xmlschema    >= 9
                  , hxt-xpath              >= 9.1

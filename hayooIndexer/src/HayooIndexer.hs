@@ -31,8 +31,7 @@ import           System.Exit
 import           System.IO
 import           Text.XML.HXT.Cache
 import           Text.XML.HXT.Core
-import           Text.XML.HXT.Curl
-import           Text.XML.HXT.HTTP ()
+import           Text.XML.HXT.HTTP
 
 
 -- ------------------------------------------------------------
@@ -97,7 +96,7 @@ initAppOpts
                                                 , application_xhtml
                                                 ]
                           >>>
-                          withCurl [ (curl_location,             v_1)               -- automatically follow redirects
+                          withHTTP [ (curl_location,             v_1)               -- automatically follow redirects
                                    , (curl_max_redirects,        "3")               -- but limit # of redirects to 3
                                    ]
                           >>>

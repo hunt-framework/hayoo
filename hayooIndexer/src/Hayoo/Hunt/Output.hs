@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -9,17 +10,18 @@ where
 
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Data.Aeson                 (ToJSON, decode, encode)
-import           Data.Aeson.Encode.Pretty   (Config(..), encodePretty', keyOrder)
+import           Data.Aeson.Encode.Pretty   (Config (..), Indent (..),
+                                             encodePretty', keyOrder)
 import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LC
 import           Data.Maybe                 (fromJust)
 import           Data.Text                  (Text)
 import           Hunt.Interpreter.Command   (CmdError (..), CmdRes (..))
 import           Network.Browser            (browse, request, setOutHandler)
-import           Network.HTTP               -- (...) -- all the others
+import           Network.HTTP
 import           Network.URI                (parseURIReference)
 import           System.Directory           (createDirectoryIfMissing)
-import           System.FilePath            ((</>), (<.>), splitFileName)
+import           System.FilePath            (splitFileName, (<.>), (</>))
 
 -- ------------------------------------------------------------
 
@@ -75,9 +77,15 @@ jsonOutput :: (ToJSON c) => Bool -> (LB.ByteString -> IO a) -> c -> IO a
 jsonOutput pretty io x
     = io $ (if pretty then encodePretty' encConfig else encode) x
       where
+#if MIN_VERSION_aeson_pretty(0, 8, 0)
+        indent = Spaces 2
+#else
+        indent = 2
+#endif
+
         encConfig :: Config
         encConfig
-            = Config { confIndent = 2
+            = Config { confIndent = indent
                      , confCompare
                          = keyOrder ["description", "index", "uri"]
                            `mappend`

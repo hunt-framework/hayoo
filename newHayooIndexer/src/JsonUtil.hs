@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module JsonUtil
   ( jsonOutput
@@ -20,29 +21,37 @@ module JsonUtil
   )
 where
 
-import           Control.Monad
 import           Control.Exception          (bracket)
+import           Control.Monad
 import           Data.Aeson                 (ToJSON, encode)
-import qualified Data.Aeson                 as A (ToJSON, toJSON, object, Value(..))
-import           Data.Aeson.Encode.Pretty   (Config(..), encodePretty', keyOrder)
+import qualified Data.Aeson                 as A (ToJSON, Value (..), object,
+                                                  toJSON)
+import           Data.Aeson.Encode.Pretty   (Config (..), Indent (..),
+                                             encodePretty', keyOrder)
 import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LC
-import           Data.Monoid                (Monoid(..))
-import           System.IO
-import qualified Data.Text                  as T
+import           Data.Monoid                (Monoid (..))
 import           Data.Text                  (Text)
+import qualified Data.Text                  as T
 import           Data.Time                  (UTCTime)
-import           Data.Time.Format           (formatTime, defaultTimeLocale)
+import           Data.Time.Format           (defaultTimeLocale, formatTime)
 import           System.Directory           (createDirectoryIfMissing)
 import           System.FilePath            (takeDirectory)
+import           System.IO
 
 jsonOutput :: (ToJSON c) => Bool -> (LB.ByteString -> IO a) -> c -> IO a
 jsonOutput pretty io x
     = io $ (if pretty then encodePretty' encConfig else encode) x
       where
+#if MIN_VERSION_aeson_pretty(0, 8, 0)
+        indent = Spaces 2
+#else
+        indent = 2
+#endif
+
         encConfig :: Config
         encConfig
-            = Config { confIndent = 2
+            = Config { confIndent = indent
                      , confCompare
                          = keyOrder ["description", "index", "uri"]
                            `mappend`
