@@ -9,23 +9,22 @@ import           Data.String (fromString)
 import           Data.String.Conversions (cs)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import           Hayoo.Common
-import qualified Hayoo.Templates as Templates
-import           Hunt.ClientInterface (LimitedResult)
+import qualified Text.Blaze.Renderer.Utf8 as Blaze
 import           Hunt.Server.Client (newServerAndManager)
+import           Hunt.ClientInterface (LimitedResult)
 import           Network.HTTP.Types.Status (internalServerError500, Status, notFound404, ok200)
-import qualified Network.Wai.Handler.Warp as W
-import           Network.Wai.Middleware.ForceSSL as Wai
 import qualified Network.Wai.Middleware.RequestLogger as Wai
-import           Paths_hayooFrontend
-import qualified System.IO as System (stdout)
+import qualified Network.Wai.Handler.Warp as W
+import qualified System.Log.Logger as Log
 import qualified System.Log.Formatter as Log (simpleLogFormatter)
 import qualified System.Log.Handler as Log (setFormatter)
 import qualified System.Log.Handler.Simple as Log (streamHandler)
-import qualified System.Log.Logger as Log
-import qualified Text.Blaze.Renderer.Utf8 as Blaze
+import qualified System.IO as System (stdout)
 import           Text.Read (readMaybe)
 import qualified Web.Scotty.Trans as Scotty
+import           Hayoo.Common
+import qualified Hayoo.Templates as Templates
+import           Paths_hayooFrontend
 
 start :: HayooConfiguration -> IO ()
 start config = do
@@ -49,7 +48,6 @@ start config = do
 
     Scotty.scottyOptsT options runM $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
-        Scotty.middleware Wai.forceSSL
         dispatcher
 
 fromFileWithMime :: FilePath -> TL.Text -> Scotty.ActionT HayooException HayooServer ()
