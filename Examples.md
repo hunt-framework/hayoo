@@ -38,7 +38,7 @@ Range
 
 ["upload:[2014-01-01T00:00:00 TO 2015-01-01T00:00:00]"](/?query=upload:[2014-01-01T00:00:00 TO 2015-01-01T00:00:00]) searches for all packages, that were uploaded in 2014.
 
-Badges ![Hayoo Badge](http://hayoo.fh-wedel.de/packages/hunt-searchengine/badge) 
+Badges ![Hayoo Badge](https://hayoo.fh-wedel.de/packages/hunt-searchengine/badge) 
 ======
 
 Hayoo! supports badges for your projects now. If you want to show which version of your package is indexed 
