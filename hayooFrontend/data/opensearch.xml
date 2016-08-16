@@ -4,7 +4,7 @@
   <Description>Hayoo! Haskell API Search</Description>
   <InputEncoding>UTF-8</InputEncoding>
   <OutputEncoding>UTF-8</OutputEncoding>
-  <Url type="application/opensearchdescription+xml" rel="self" template="http://hayoo.fh-wedel.de/opensearch.xml"/>
-  <Url type="application/x-suggestions+json" method="GET" template="http://hayoo.fh-wedel.de/opensearch?term={searchTerms}" />
-  <Url type="text/html" method="GET" template="http://hayoo.fh-wedel.de/?query={searchTerms}" />
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://hayoo.fh-wedel.de/opensearch.xml"/>
+  <Url type="application/x-suggestions+json" method="GET" template="https://hayoo.fh-wedel.de/opensearch?term={searchTerms}" />
+  <Url type="text/html" method="GET" template="https://hayoo.fh-wedel.de/?query={searchTerms}" />
 </OpenSearchDescription>
