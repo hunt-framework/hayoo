@@ -11,7 +11,7 @@ where
 import           Control.Monad.IO.Class     (MonadIO, liftIO)
 import           Data.Aeson                 (ToJSON, decode, encode)
 import           Data.Aeson.Encode.Pretty   (Config (..), Indent (..),
-                                             encodePretty', keyOrder)
+                                             defConfig, encodePretty', keyOrder)
 import qualified Data.ByteString.Lazy       as LB
 import qualified Data.ByteString.Lazy.Char8 as LC
 import           Data.Maybe                 (fromJust)
@@ -85,12 +85,11 @@ jsonOutput pretty io x
 
         encConfig :: Config
         encConfig
-            = Config { confIndent = indent
-                     , confCompare
-                         = keyOrder ["description", "index", "uri"]
-                           `mappend`
-                           compare
-                     }
+            = defConfig { confIndent = indent
+                        , confCompare = keyOrder ["description", "index", "uri"]
+                                       `mappend`
+                                       compare
+                        }
 
 -- ------------------------------------------------------------
 
