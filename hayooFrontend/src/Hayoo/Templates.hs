@@ -127,7 +127,7 @@ footer = [Hamlet.hamlet|
         Hunt
       |
       <a href="https://github.com/hunt-framework/hayoo">
-        Github
+        GitHub
 |]
 
 body :: Text -> Hamlet.HtmlUrl Routes -> T.Text
