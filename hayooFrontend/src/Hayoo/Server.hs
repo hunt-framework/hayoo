@@ -25,13 +25,29 @@ import qualified Web.Scotty.Trans as Scotty
 import           Hayoo.Common
 import qualified Hayoo.Templates as Templates
 import           Paths_hayooFrontend
+import qualified System.Metrics as EKG
+import qualified System.Metrics.Counter as EKGC
+import qualified System.Metrics.Distribution as EKGD
+import qualified System.Metrics.Json as EKGJ
 
 start :: HayooConfiguration -> IO ()
 start config = do
+
+    store               <- EKG.newStore
+    EKG.registerGcMetrics store
+
+    searchesCounter     <- EKG.createCounter "searches" store
+    autocompleteCounter <- EKG.createCounter "autocompletes" store
+    searchTimeDistr     <- EKG.createDistribution "search time" store
+    let stats = Stats { statIncrSearchCounter       = EKGC.inc searchesCounter
+                      , statIncrAutocompleteCounter = EKGC.inc autocompleteCounter
+                      , statSearchTime              = EKGD.add searchTimeDistr
+                      }
+
     sm <- newServerAndManager $ T.pack $ huntUrl config
 
     -- Note that 'runM' is only called once, at startup.
-    let runM m = runHayooReader m sm
+    let runM m = runHayooReader m stats sm
 
     initLoggers $ optLogLevel defaultOptions
 
@@ -48,7 +64,7 @@ start config = do
 
     Scotty.scottyOptsT options runM $ do
         Scotty.middleware Wai.logStdoutDev -- request / response logging
-        dispatcher
+        dispatcher store
 
 fromFileWithMime :: FilePath -> TL.Text -> Scotty.ActionT HayooException HayooServer ()
 fromFileWithMime path mime = do
@@ -57,8 +73,8 @@ fromFileWithMime path mime = do
     Scotty.file fullPath
 
 
-dispatcher :: Scotty.ScottyT HayooException HayooServer ()
-dispatcher = do
+dispatcher :: EKG.Store -> Scotty.ScottyT HayooException HayooServer ()
+dispatcher statStore = do
     Scotty.get "/"               $ (controlSimpleHtmlResults)
     Scotty.get "/json"           $ (controlSimpleResults Scotty.json)
     Scotty.get "/autocomplete"   $ handleAutocomplete `Scotty.rescue` (\_ -> Scotty.json ([]::[()]))
@@ -73,6 +89,7 @@ dispatcher = do
     Scotty.get "/favicon.ico"    $ fromFileWithMime "favicon.ico" "image/x-icon"
     Scotty.get "/examples"       $ Scotty.html $ Templates.body "" Templates.examples
     Scotty.get "/about"          $ Scotty.html $ Templates.body "" Templates.about
+    Scotty.get "/stats"          $ handleStats statStore
     Scotty.notFound $ handleException "" FileNotFound
 
 handleAutocomplete :: HayooAction ()
@@ -98,6 +115,11 @@ handleOpenSearch = do
     value <- autocomplete q
     Scotty.setHeader "Access-Control-Allow-Origin" "*"
     Scotty.json (q, value)
+
+handleStats :: EKG.Store -> HayooAction ()
+handleStats store = do
+  sample <- liftIO $ EKG.sampleAll store
+  Scotty.json $ EKGJ.sampleToJson sample
 
 getPage :: HayooAction Int
 getPage = do

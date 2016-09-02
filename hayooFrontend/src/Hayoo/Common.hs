@@ -18,6 +18,9 @@ module Hayoo.Common
   , HayooException (..)
   , HayooAction
     -- , hayooServer
+
+  , CollectStats(..)
+
   , runHayooReader
   , runHayooReader'
   , autocomplete
@@ -41,7 +44,7 @@ import           Control.Monad.Base          (MonadBase, liftBase,
                                               liftBaseDefault)
 import           Control.Monad.Catch         (MonadThrow)
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
-import           Control.Monad.Reader        (MonadReader, ReaderT, ask,
+import           Control.Monad.Reader        (MonadReader, ReaderT, asks,
                                               runReaderT)
 import           Control.Monad.Trans.Class   (MonadTrans, lift)
 import           Control.Monad.Trans.Control (ComposeSt, MonadBaseControl,
@@ -208,8 +211,20 @@ instance Scotty.ScottyError HayooException where
 instance IsString HayooException where
         fromString s = StringException $ cs s
 
-newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT H.ServerAndManager m a }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadReader (H.ServerAndManager), MonadTrans, MonadThrow)
+data CollectStats = Stats {
+    statIncrSearchCounter :: IO ()
+  , statIncrAutocompleteCounter :: IO ()
+  , statSearchTime        :: Double -> IO ()
+  }
+
+data HayooEnv =
+  HayooEnv { heHunt  :: H.ServerAndManager
+           , heStats :: CollectStats
+           }
+
+
+newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT HayooEnv m a }
+    deriving (Functor, Applicative, Monad, MonadIO, MonadReader HayooEnv, MonadTrans, MonadThrow)
 
 type HayooServer = HayooServerT IO
 
@@ -222,7 +237,7 @@ instance (MonadBase b m) => MonadBase b (HayooServerT m) where
 #if MIN_VERSION_monad_control(1,0,0)
 -- from http://hackage.haskell.org/package/monad-control-1.0.0.4/docs/src/Control-Monad-Trans-Control.html
 instance MonadTransControl (HayooServerT) where
-    type StT (HayooServerT) a = StT (ReaderT H.ServerAndManager) a
+    type StT (HayooServerT) a = StT (ReaderT HayooEnv) a
     liftWith = defaultLiftWith HayooServerT runHayooServerT
     restoreT = defaultRestoreT HayooServerT
 
@@ -234,7 +249,7 @@ instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where
 #else
 -- from http://hackage.haskell.org/package/monad-control-0.3.2.3/docs/src/Control-Monad-Trans-Control.html
 instance MonadTransControl (HayooServerT) where
-    newtype StT (HayooServerT) a = StHayooServerT {unStHayooServerT :: StT (ReaderT H.ServerAndManager) a }
+    newtype StT (HayooServerT) a = StHayooServerT {unStHayooServerT :: StT (ReaderT HayooEnv) a }
     liftWith = defaultLiftWith HayooServerT runHayooServerT StHayooServerT
     restoreT = defaultRestoreT HayooServerT unStHayooServerT
 
@@ -245,17 +260,22 @@ instance (MonadBaseControl b m) => MonadBaseControl b (HayooServerT m) where
     restoreM     = defaultRestoreM   unStMHayooServer
 #endif
 
-runHayooReader :: HayooServerT m a -> H.ServerAndManager -> m a
-runHayooReader = runReaderT . runHayooServerT
+runHayooReader :: HayooServerT m a -> CollectStats -> H.ServerAndManager -> m a
+runHayooReader m stats serverAndManager =
+  runReaderT (runHayooServerT m) (HayooEnv serverAndManager stats)
 
-runHayooReader' :: (MonadIO m) => HayooServerT m a -> Text -> m a
-runHayooReader' x s = do
+runHayooReader' :: (MonadIO m)
+                => HayooServerT m a
+                -> CollectStats
+                -> Text
+                -> m a
+runHayooReader' x stats s = do
     sm <- H.newServerAndManager s
-    runHayooReader x sm
+    runHayooReader x stats sm
 
 withServerAndManager' :: (MonadIO m, MonadBaseControl IO m) => H.HuntConnectionT (HayooServerT m) b -> HayooServerT m b
 withServerAndManager' x = do
-    sm <- ask
+    sm <- asks heHunt
     H.withServerAndManager sm x
 
 
@@ -374,12 +394,17 @@ handleSignatureCompletionResults txt q comps
 
 autocomplete :: Text -> HayooAction [Text]
 autocomplete q = raiseExeptions $ do
+    incrAutocompleteCtr <- statIncrAutocompleteCounter <$> asks heStats
+    liftIO $ incrAutocompleteCtr
+
     q' <- handleSignatureQuery q
     handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.postAutocomplete q')
 
-
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
+    incrSearchCtr <- statIncrSearchCounter <$> asks heStats
+    liftIO $ incrSearchCtr
+
     q' <- handleSignatureQuery q
     withServerAndManager' $ H.postQuery q' (p * 20)
 
