@@ -37,16 +37,16 @@ module Hayoo.Common
   )
 where
 
-import           GHC.Generics                (Generic)
-import           Control.Exception           (Exception)
-import           Control.Exception.Lifted    (Handler (..), catches)
+import           GHC.Generics (Generic)
+import           Control.Exception (Exception)
+import           Control.Exception.Lifted (Handler (..), catches)
 import           Control.Monad.Base          (MonadBase, liftBase,
                                               liftBaseDefault)
-import           Control.Monad.Catch         (MonadThrow)
-import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Control.Monad.Catch (MonadThrow)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader        (MonadReader, ReaderT, asks,
                                               runReaderT)
-import           Control.Monad.Trans.Class   (MonadTrans, lift)
+import           Control.Monad.Trans.Class (MonadTrans, lift)
 import           Control.Monad.Trans.Control (ComposeSt, MonadBaseControl,
                                               MonadTransControl, StM, StT,
                                               defaultLiftBaseWith,
@@ -55,27 +55,28 @@ import           Control.Monad.Trans.Control (ComposeSt, MonadBaseControl,
                                               liftWith, restoreM, restoreT)
 
 import           Data.Aeson
-import           Data.Aeson.Types            (Parser)
-import           Data.Data                   (Data)
-import           Data.Scientific             (Scientific)
-import           Data.String                 (IsString, fromString)
-import           Data.String.Conversions     (cs, (<>))
-import           Data.Text                   (Text, isInfixOf, replace, splitOn, strip)
-import qualified Data.Text                   as Text
-import           Data.Typeable               (Typeable)
+import           Data.Aeson.Types (Parser)
+import           Data.Data (Data)
+import           Data.Scientific (Scientific)
+import           Data.String (IsString, fromString)
+import           Data.String.Conversions (cs, (<>))
+import           Data.Text (Text, isInfixOf, replace, splitOn, strip)
+import qualified Data.Text as Text
+import           Data.Typeable (Typeable)
 import           Hayoo.ParseSignature
 import           Hunt.ClientInterface        (Context, Query, qAnd, qAnds,
                                               qContext, qOrs, qPhrase,
                                               qWord, qWordNoCase, qFullWord,
                                               setContexts, setBoost)
-import qualified Hunt.ClientInterface        as H
-import           Hunt.Query.Language.Parser  (parseQuery)
-import qualified Hunt.Server.Client          as H
-import           Network.HTTP.Conduit        (HttpException)
-import qualified System.Log.Logger           as Log (debugM)
-import           Text.Parsec                 (ParseError)
-import           Text.Read                   (readMaybe)
-import qualified Web.Scotty.Trans            as Scotty
+import qualified Hunt.ClientInterface as H
+import           Hunt.Query.Language.Parser (parseQuery)
+import qualified Hunt.Server.Client as H
+import           Network.HTTP.Conduit (HttpException)
+import qualified System.Log.Logger as Log (debugM)
+import           Text.Parsec (ParseError)
+import           Text.Read (readMaybe)
+import qualified Web.Scotty.Trans as Scotty
+import           Data.Time
 
 --import           Control.Failure (Failure, failure)
 
@@ -212,16 +213,16 @@ instance IsString HayooException where
         fromString s = StringException $ cs s
 
 data CollectStats = Stats {
-    statIncrSearchCounter :: IO ()
+    statIncrSearchCounter       :: IO ()
   , statIncrAutocompleteCounter :: IO ()
-  , statSearchTime        :: Double -> IO ()
+  , statSearchTime              :: Double -> IO ()
+  , statAutocompleteTime        :: Double -> IO ()
   }
 
 data HayooEnv =
   HayooEnv { heHunt  :: H.ServerAndManager
            , heStats :: CollectStats
            }
-
 
 newtype HayooServerT m a = HayooServerT { runHayooServerT :: ReaderT HayooEnv m a }
     deriving (Functor, Applicative, Monad, MonadIO, MonadReader HayooEnv, MonadTrans, MonadThrow)
@@ -386,6 +387,18 @@ handleSignatureQuery q
             (Left err) -> liftIO $ throwIO $ StringException err
 -- -}
 
+withTimer :: (CollectStats -> (Double -> IO ()))
+          -> HayooServer a
+          -> HayooServer a
+withTimer stat action = do
+  t0 <- liftIO getCurrentTime
+  r <- t0 `seq` action
+  t1 <- liftIO getCurrentTime
+  addToDistr <- asks (stat . heStats)
+  let delta = t1 `diffUTCTime` t0
+  liftIO $ addToDistr (realToFrac delta)
+  return r
+
 handleSignatureCompletionResults :: Text -> Query -> [Text] -> [Text]
 handleSignatureCompletionResults txt q comps
     | isSignatureQuery txt = comps
@@ -397,16 +410,18 @@ autocomplete q = raiseExeptions $ do
     incrAutocompleteCtr <- statIncrAutocompleteCounter <$> asks heStats
     liftIO $ incrAutocompleteCtr
 
-    q' <- handleSignatureQuery q
-    handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.postAutocomplete q')
+    withTimer statAutocompleteTime $ do
+      q' <- handleSignatureQuery q
+      handleSignatureCompletionResults q q' <$> (withServerAndManager' $ H.postAutocomplete q')
 
 query :: Text -> Int -> HayooAction (H.LimitedResult SearchResult)
 query q p = raiseExeptions $ do
     incrSearchCtr <- statIncrSearchCounter <$> asks heStats
     liftIO $ incrSearchCtr
 
-    q' <- handleSignatureQuery q
-    withServerAndManager' $ H.postQuery q' (p * 20)
+    withTimer statSearchTime $ do
+      q' <- handleSignatureQuery q
+      withServerAndManager' $ H.postQuery q' (p * 20)
 
 selectPackageVersion :: Text -> HayooAction (Maybe Text)
 selectPackageVersion pkgName = raiseExeptions $ do

@@ -64,6 +64,7 @@ executable hayooFrontend
                    , shakespeare    >= 1.2
                    , string-conversions     >= 0.3.0.2
                    , text           >= 1.2 && < 2
+                   , time
                    , transformers   >= 0.3
                    , transformers-base >= 0.4 && < 0.5
                    , vector         >= 0.10

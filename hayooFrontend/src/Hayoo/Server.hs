@@ -36,12 +36,15 @@ start config = do
     store               <- EKG.newStore
     EKG.registerGcMetrics store
 
-    searchesCounter     <- EKG.createCounter "searches" store
-    autocompleteCounter <- EKG.createCounter "autocompletes" store
-    searchTimeDistr     <- EKG.createDistribution "search time" store
+    searchesCounter       <- EKG.createCounter "searches" store
+    autocompleteCounter   <- EKG.createCounter "autocompletes" store
+    autocompleteTimeDistr <- EKG.createDistribution "autocomplete time" store
+    searchTimeDistr       <- EKG.createDistribution "search time" store
+
     let stats = Stats { statIncrSearchCounter       = EKGC.inc searchesCounter
                       , statIncrAutocompleteCounter = EKGC.inc autocompleteCounter
                       , statSearchTime              = EKGD.add searchTimeDistr
+                      , statAutocompleteTime        = EKGD.add autocompleteTimeDistr
                       }
 
     sm <- newServerAndManager $ T.pack $ huntUrl config
