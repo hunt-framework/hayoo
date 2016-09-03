@@ -4,7 +4,7 @@ About
 What is Hayoo?
 -------------
 
-Hayoo is a search engine for [Hackage][hackage] packages, which allows you to search for functions, data types and packages. Each indexed document consists of a name, a description and, if applicable, a signature. Have a look at the [examples](/examples) on how to use Hayoo. In constrast to [Hoogle](http://www.haskell.org/hoogle/), all available packages are indexed, but the signature search is not as advanced.
+Hayoo is a search engine for [Hackage][hackage] packages, which allows you to search for functions, data types and packages. Each indexed document consists of a name, a description and, if applicable, a signature. Have a look at the [examples](/Examples.md) on how to use Hayoo. In constrast to [Hoogle](http://www.haskell.org/hoogle/), all available packages are indexed, but the signature search is not as advanced.
 
 Hunt
 ----
