@@ -1,7 +1,6 @@
 module Main where
 
-import qualified Hunt.Client as HC
-import Hayoo.Server
+import           Hayoo.Server
 
 main :: IO ()
 main = do

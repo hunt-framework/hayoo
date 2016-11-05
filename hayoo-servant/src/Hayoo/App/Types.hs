@@ -1,19 +1,27 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Hayoo.App.Types
-  ( ResultType (..)
+  ( -- * Types
+    ResultType (..)
   , PackageVersionResult (..)
   , SearchResult (..)
+
+    -- * Operations
+  , contextQueryToQuery
+  , contextQueryName
+  , contextQueries
   ) where
 
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import           Data.Char        (toLower)
+import           Data.Char            (toLower)
 import           Data.Scientific
-import qualified Data.Text        as T
+import qualified Data.Text            as T
 import           GHC.Generics
-import qualified Text.Read        as TR
+import           Hunt.ClientInterface (Context, Query, qAnd, qContext, qOrs,
+                                       qPhrase, qWord, setContexts)
+import qualified Text.Read            as TR
 
 
 -- TYPES
@@ -59,6 +67,17 @@ data SearchResult
       resultType         :: ResultType
     }
   deriving (Show, Eq, Generic)
+
+
+data ContextQuery
+    = QueryReverseDependencies
+    | QueryPackageModules
+    | QueryPackageDatatypes
+    | QueryPackageByAuthor
+    | QueryModuleContent
+    | QueryPackage
+    | QueryModule
+    deriving (Show)
 
 
 -- INSTANCES
@@ -121,7 +140,94 @@ instance FromJSON SearchResult where
         return $ NonPackageResult score baseUri p mods n s d c t
 
 
+-- OPERATIONS
+
+getSRPackage :: SearchResult -> T.Text
+getSRPackage sr@NonPackageResult{} = resultPackage sr
+getSRPackage sr@PackageResult{} = resultName sr
+
+
+contextQueryToQuery :: ContextQuery -> SearchResult -> Query
+contextQueryToQuery query result =
+  case (query, result) of
+    (QueryReverseDependencies, sr) ->
+      qContext "dependencies" $ getSRPackage sr
+
+    (QueryPackageModules, sr) ->
+      (qContext "package" $ getSRPackage sr) `qAnd` (qContext "type" "module")
+
+    (QueryPackageDatatypes, sr) ->
+      let
+        packageCtx = qContext "package" $ getSRPackage sr
+        typeCtx    = qContext "type" <$> ["data", "newtype", "type"]
+      in
+        packageCtx `qAnd` (qOrs typeCtx)
+
+    (QueryPackageByAuthor, sr@PackageResult{}) ->
+      let
+        authors = map T.strip $ T.splitOn "," $ resultAuthor sr
+      in
+        qOrs $ (setContexts ["author"] . qPhrase) <$> authors
+
+    (QueryPackageByAuthor, _) ->
+      error "contextQueryToQuery: QueryPackageByAuthor: no package"
+
+    (QueryModuleContent, sr@NonPackageResult{}) ->
+      (qContext "package" $ getSRPackage sr) `qAnd` (modulesInContext "module" sr)
+
+    (QueryModuleContent, _) ->
+      error "contextQueryToQuery: QueryModuleContent: package"
+
+    (QueryPackage, sr@NonPackageResult{}) ->
+      (qContext "name" $ getSRPackage sr) `qAnd` (qContext "type" "package")
+
+    (QueryPackage, _) ->
+      error "contextQueryToQuery: QueryPackage: package"
+
+    (QueryModule, sr@NonPackageResult{}) ->
+      (modulesInContext "module" sr) `qAnd` (qContext "type" "module")
+
+    (QueryModule, _) ->
+      error "contextQueryToQuery: QueryPackage: package"
+
+
+contextQueryName :: ContextQuery -> T.Text
+contextQueryName query =
+  case query of
+    QueryReverseDependencies ->
+      "Reverse Dependencies"
+
+    QueryPackageModules ->
+      "Package Modules"
+
+    QueryPackageDatatypes ->
+      "Data types"
+
+    QueryPackageByAuthor ->
+      "Packages by same author"
+
+    QueryModuleContent ->
+      "Module content"
+
+    QueryPackage ->
+      "Show related package"
+
+    QueryModule ->
+      "Show related module"
+
+
+contextQueries :: SearchResult -> [ContextQuery]
+contextQueries sr
+    | (resultType sr) == Package = [QueryReverseDependencies, QueryPackageModules, QueryPackageDatatypes, QueryPackageByAuthor]
+    | (resultType sr) == Module  = [QueryModuleContent, QueryPackage]
+    | otherwise                  = [QueryModule, QueryPackage]
+
+
 -- HELPERS
+
+modulesInContext :: Context -> SearchResult -> Query
+modulesInContext c sr = (setContexts [c] $ qOrs $ qWord <$> (resultModules sr))
+
 
 lowercaseConstructorsOptions :: Options
 lowercaseConstructorsOptions =
