@@ -217,10 +217,16 @@ contextQueryName query =
 
 
 contextQueries :: SearchResult -> [ContextQuery]
-contextQueries sr
-    | (resultType sr) == Package = [QueryReverseDependencies, QueryPackageModules, QueryPackageDatatypes, QueryPackageByAuthor]
-    | (resultType sr) == Module  = [QueryModuleContent, QueryPackage]
-    | otherwise                  = [QueryModule, QueryPackage]
+contextQueries sr =
+  case resultType sr of
+    Package ->
+      [QueryReverseDependencies, QueryPackageModules, QueryPackageDatatypes, QueryPackageByAuthor]
+
+    Module ->
+      [QueryModuleContent, QueryPackage]
+
+    _ ->
+      [QueryModule, QueryPackage]
 
 
 -- HELPERS
