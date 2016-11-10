@@ -6,6 +6,9 @@ module Hayoo.API
   ( -- * API
     HayooAPI
   , RestAPI
+  , SearchAPI
+  , AutocompleteAPI
+  , MetricsAPI
 
     -- * Proxy
   , hayooAPI

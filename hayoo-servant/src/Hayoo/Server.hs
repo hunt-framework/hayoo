@@ -10,44 +10,26 @@ module Hayoo.Server
   ) where
 
 import           Control.Monad.Except
-import           Data.Maybe                (fromMaybe)
-import qualified Data.Text                 as T
+import           Data.Maybe                 (fromMaybe)
+import qualified Data.Text                  as T
 import           Hayoo.API
 import           Hayoo.App
+import           Hayoo.Server.Configuration
 import           Hayoo.Types
-import qualified Hunt.Client               as HC
-import           Hunt.ClientInterface      (LimitedResult)
-import           Network.Wai               (Application)
-import           Network.Wai.Handler.Warp  (run)
+import qualified Hunt.Client                as HC
+import           Hunt.ClientInterface       (LimitedResult)
+import           Network.Wai                (Application)
+import           Network.Wai.Handler.Warp   (run)
 import           Servant
-import           Servant.Client            (BaseUrl)
+import           Servant.Client             (BaseUrl)
 import           Servant.Server
-import           Servant.Utils.StaticFiles (serveDirectory)
-import           System.Metrics            (Store)
-import qualified System.Metrics            as EKG
-import           System.Metrics.Json       (Sample (Sample))
+import           Servant.Utils.StaticFiles  (serveDirectory)
+import           System.Metrics             (Store)
+import qualified System.Metrics             as EKG
+import           System.Metrics.Json        (Sample (Sample))
 
 
 -- SERVER
-
-data HayooConfig = HayooConfig
-  { hayooHost       :: !T.Text
-  , hayooServerPort :: !Int
-  , hayooPublicDir  :: !FilePath
-  , huntBaseUrl     :: !BaseUrl
-  } deriving (Show)
-
-
-serverConfig :: HayooConfig
-serverConfig = HayooConfig
-  { hayooHost      = "localhost"
-  , hayooServerPort      = 3001
-  , hayooPublicDir = "public"
-  , huntBaseUrl    = HC.huntBaseUrl
-  }
-
-
--- API
 
 runHayooServer :: HayooConfig -> IO ()
 runHayooServer config = do
@@ -74,13 +56,27 @@ server store path env = enter hayooAppToEither (serverT store)
 
 
 serverT :: Store -> ServerT RestAPI HayooApp
-serverT store = (measuredSearch :<|> measuredSearch)
-           :<|> measuredCompletions
-           :<|> (metrics store :<|> metrics store)
+serverT store = searchAPI
+           :<|> completionAPI
+           :<|> metricsAPI store
+
+
+-- APIS
+
+searchAPI :: ServerT SearchAPI HayooApp
+searchAPI = measuredSearch
+       :<|> measuredSearch
   where
     measuredSearch :: T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
     measuredSearch query p = measure searches (search query page)
       where page = fromMaybe 0 p
 
-    measuredCompletions :: T.Text -> HayooApp [T.Text]
-    measuredCompletions = measure completions . autocomplete
+
+completionAPI :: ServerT AutocompleteAPI HayooApp
+completionAPI =
+  measure completions . autocomplete
+
+
+metricsAPI :: Store -> ServerT MetricsAPI HayooApp
+metricsAPI store = metrics store
+              :<|> metrics store

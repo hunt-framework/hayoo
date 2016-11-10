@@ -7,7 +7,7 @@ license:             MIT
 license-file:        LICENSE
 author:              Author name here
 maintainer:          example@example.com
-copyright:           2016 Author name here
+copyright:           2016 Matthias Metzger, Alex Biehl
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
@@ -21,6 +21,7 @@ executable hayoo-servant
                      , Hayoo.Types
                      , Hayoo.API
                      , Hayoo.Server
+                     , Hayoo.Server.Configuration
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , aeson
