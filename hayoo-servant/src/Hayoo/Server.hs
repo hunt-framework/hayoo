@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
 module Hayoo.Server
-  ( -- * Types
-    HayooConfig (..)
+  ( -- * Server
+    runHayooServer
 
-    -- * Server
-  , runHayooServer
+    -- * Server Configuration
+  ,  HayooServerConfiguration (..)
   , serverConfig
+  , hayooConfig
   ) where
 
 import           Control.Monad.Except
@@ -31,7 +32,7 @@ import           System.Metrics.Json        (Sample (Sample))
 
 -- SERVER
 
-runHayooServer :: HayooConfig -> IO ()
+runHayooServer :: HayooServerConfiguration -> IO ()
 runHayooServer config = do
   store <- EKG.newStore
   EKG.registerGcMetrics store

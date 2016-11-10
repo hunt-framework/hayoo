@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Hayoo.Server
-
+import           Hayoo.Server
+import           Options.Applicative
 
 main :: IO ()
-main = do
-  runHayooServer serverConfig
+main = execParser opts >>= runHayooServer
+  where
+    opts = info (helper <*> hayooConfig)
+      ( fullDesc
+      <> progDesc "Start the Hayoo! server"
+      <> header "A command line interface to configure the startup of the Hayoo! server" )
