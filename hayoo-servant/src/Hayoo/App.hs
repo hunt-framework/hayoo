@@ -19,6 +19,7 @@ module Hayoo.App
   , newMetrics
   , stats
   , currentCount
+  , metrics
   ) where
 
 
@@ -35,6 +36,7 @@ import           Hunt.ClientInterface (qAnd, qAnds, qContext, qFullWord, qOrs,
                                        setContexts)
 import qualified Hunt.ClientInterface as HC
 import           Servant.Client       (ClientEnv, ClientM, ServantError)
+import           System.Metrics.Json  (Sample)
 import qualified Text.Parsec          as P
 
 
@@ -116,6 +118,10 @@ selectPackageVersion packageName = do
 
     clientResult ->
       throwError $ InvalidCmdResult clientResult
+
+
+metrics :: Store -> HayooApp Sample
+metrics = collectStats
 
 
 -- HUNT COMMANDS

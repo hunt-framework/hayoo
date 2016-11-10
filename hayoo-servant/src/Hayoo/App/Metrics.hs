@@ -6,6 +6,7 @@ module Hayoo.App.Metrics
 
     -- * Operations
   , createMetric
+  , collectStats
   , measureAndStore
   , currentCount
   , stats
@@ -13,14 +14,15 @@ module Hayoo.App.Metrics
 
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Data.Int                    (Int64)
+import qualified Data.Text                   as T
 import           Data.Time                   (diffUTCTime, getCurrentTime)
-import qualified Data.Text as T
-import          System.Metrics      (Store)
-import          System.Metrics      (createCounter, createDistribution)
+import           System.Metrics              (Store)
+import           System.Metrics              (sampleAll, createCounter, createDistribution)
 import           System.Metrics.Counter      (Counter)
 import qualified System.Metrics.Counter      as EKGC
 import           System.Metrics.Distribution (Distribution, Stats)
 import qualified System.Metrics.Distribution as EKGD
+import qualified System.Metrics.Json         as EKGJ
 
 
 -- TYPES
@@ -36,7 +38,7 @@ data Metric = Metric
 
 createMetric :: (MonadIO m) => T.Text -> T.Text -> Store -> m Metric
 createMetric counterName statName store = do
-  counter <- liftIO $ createCounter counterName store 
+  counter <- liftIO $ createCounter counterName store
   stats   <- liftIO $ createDistribution statName store
   return $ Metric counter stats
 
@@ -65,3 +67,8 @@ measureExecTime action = do
   let delta = t1 `diffUTCTime` t0
   return (r, (realToFrac delta))
 
+
+collectStats :: (MonadIO m) => Store -> m EKGJ.Sample
+collectStats store = do
+  result <- liftIO $ sampleAll store
+  return $ EKGJ.Sample result

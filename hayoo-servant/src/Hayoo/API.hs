@@ -3,16 +3,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators     #-}
 module Hayoo.API
-  ( hayooAPI
-  , HayooAPI
+  ( -- * API
+    HayooAPI
+  , RestAPI
+
+    -- * Proxy
+  , hayooAPI
   ) where
 
 
 import qualified Data.Text            as T
+import           Hayoo.Types          (SearchResult)
 import           Hunt.ClientInterface (LimitedResult)
 import           Servant
 import           System.Metrics.Json  (Sample)
-import           Types                (SearchResult)
 
 
 -- API
@@ -21,10 +25,24 @@ hayooAPI :: Proxy HayooAPI
 hayooAPI = Proxy
 
 
-type HayooAPI = SearchAPI
-           :<|> AutocompleteAPI
-           :<|> MetricsAPI
-           :<|> PublicFilesAPI
+type HayooAPI = RestAPI
+           :<|> Raw
+
+
+type RestAPI = SearchAPI
+          :<|> AutocompleteAPI
+          :<|> MetricsAPI
+
+
+type SearchAPI =
+          "json" -- Legacy
+          :> Capture "query" T.Text
+          :> QueryParam "page" Int
+          :> Get '[JSON] (LimitedResult SearchResult)
+     :<|> "search"
+          :> Capture "query" T.Text
+          :> QueryParam "page" Int
+          :> Get '[JSON] (LimitedResult SearchResult)
 
 
 type AutocompleteAPI =
@@ -33,19 +51,8 @@ type AutocompleteAPI =
         :> Get '[JSON] [T.Text]
 
 
-type SearchAPI =
-          "json" -- Legacy
-          :> Capture "query" T.Text
-          :> Get '[JSON] (LimitedResult SearchResult)
-          "search"
-          :> Capture "query" T.Text
-          :> Get '[JSON] (LimitedResult SearchResult)
-
-
 type MetricsAPI =
-        "stats"   :> Get '[JSON] Sample
-        "metrics" :> Get '[JSON] Sample
+          "stats"   :> Get '[JSON] Sample
+     :<|> "metrics" :> Get '[JSON] Sample
 
-
-type PublicFilesAPI = Raw
 
