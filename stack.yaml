@@ -1,6 +1,6 @@
 packages:
   #- ./hayooFrontend
-  - ./hayoo-servant
+  - ./hayoo-server
   - ./hayooLib
   - ./hayooIndexer
   #- ./newHayooIndexer
