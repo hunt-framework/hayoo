@@ -88,7 +88,7 @@ docToDep d
     | otherwise   = [(adUri d, (name, deps))]
       where
         name =                lookupDescriptionText d'name         d
-        deps = fromMaybe [] $ lookupDescription     d'dependencies d
+        deps = maybe [] T.words $ lookupDescription     d'dependencies d
 
 rankToCommand :: Bool -> UTCTime -> (PkgMap, RankTable) -> Command
 rankToCommand save now (pm, rt)

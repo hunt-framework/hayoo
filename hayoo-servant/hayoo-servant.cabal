@@ -17,17 +17,20 @@ executable hayoo-servant
   main-is:             Main.hs
   default-language:    Haskell2010
   other-modules:       Hayoo.App
-                     , Hayoo.App.Types
+                     , Hayoo.App.Metrics
+                     , Hayoo.Types
                      , Hayoo.API
                      , Hayoo.Server
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , aeson
-                     , parsec
+                     , ekg-core
+                     , ekg-json 
                      , hayooLib
                      , hunt-client
                      , hunt-searchengine
                      , mtl
+                     , parsec
                      , servant
                      , servant-server
                      , servant-client

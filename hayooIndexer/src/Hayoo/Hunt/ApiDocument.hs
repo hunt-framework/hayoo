@@ -99,7 +99,7 @@ fiToDescr (FunctionInfo mon sig pac sou fct typ)
 
 piToDescr :: PackageInfo -> Description
 piToDescr (PackageInfo nam ver dep aut mai cat hom syn des upl ran)
-    = insDescription d'dependencies (map T.pack . words $ dep) -- add the list of dependencies
+    = insDescription d'dependencies dep -- add the list of dependencies
       $
       mkDescription                                            -- add all simple text attributes
       [ (d'name,         T.pack nam)

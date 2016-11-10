@@ -5,11 +5,20 @@ module Hayoo.App
     HayooApp (..)
   , HayooEnv (..)
   , HayooErr (..)
+  , HayooMetrics (..)
 
     -- * Operations
+  , runHayoo
+  , measure
   , search
   , autocomplete
   , selectPackageVersion
+
+    -- * Metrics
+  , Metric
+  , newMetrics
+  , stats
+  , currentCount
   ) where
 
 
@@ -17,9 +26,9 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.Aeson           (decode, encode)
 import qualified Data.Text            as T
-import           Data.Time
-import           Hayoo.App.Types
+import           Hayoo.App.Metrics
 import           Hayoo.ParseSignature
+import           Hayoo.Types
 import qualified Hunt.Client          as HC
 import           Hunt.ClientInterface (qAnd, qAnds, qContext, qFullWord, qOrs,
                                        qPhrase, qWord, qWordNoCase, setBoost,
@@ -37,7 +46,8 @@ newtype HayooApp a = HayooApp
 
 
 data HayooEnv = HayooEnv
-  { envClient :: ClientEnv
+  { envClient  :: !ClientEnv
+  , envMetrics :: !HayooMetrics
   }
 
 
@@ -48,7 +58,32 @@ data HayooErr
   deriving (Show)
 
 
+data HayooMetrics = HayooMetrics
+  { searches    :: !Metric
+  , completions :: !Metric
+  }
+
+
 -- OPERATIONS
+
+runHayoo :: HayooApp a -> HayooEnv -> IO (Either HayooErr a)
+runHayoo app env = runExceptT $ runReaderT (unHayoo app) env
+
+
+newMetrics :: (MonadIO m) => Store -> m HayooMetrics
+newMetrics store = do
+  searches    <- createMetric "searches" "searchStats" store
+  completions <- createMetric "completions" "completionStats" store
+  return $ HayooMetrics searches completions
+
+
+-- API
+
+measure :: (HayooMetrics -> Metric) -> HayooApp a -> HayooApp a
+measure get action = do
+  metric <- asks (get . envMetrics)
+  measureAndStore metric action
+
 
 search :: T.Text -> Int -> HayooApp (HC.LimitedResult SearchResult)
 search queryText page = runRequest $ HC.search query offset limit
@@ -81,15 +116,6 @@ selectPackageVersion packageName = do
 
     clientResult ->
       throwError $ InvalidCmdResult clientResult
-
-
-time :: HayooApp a -> HayooApp (a, Double)
-time action = do
-  t0 <- liftIO getCurrentTime
-  r  <- action
-  t1 <- liftIO getCurrentTime
-  let delta = t1 `diffUTCTime` t0
-  return (r, (realToFrac delta))
 
 
 -- HUNT COMMANDS
@@ -181,18 +207,15 @@ packageVersion _ = Nothing
 
 removeQuotes :: T.Text -> T.Text
 removeQuotes t
-  | T.null t        = t
-  | T.head t == '"'
-    &&
-    T.last t == '"' = T.dropAround (== '"') t
-  | T.head t == '\''
-    &&
-    T.last t == '\'' = T.dropAround (== '\'') t
-  | otherwise        = t
+  | T.null t          = t
+  | surroundedBy '"'  = T.dropAround (== '"') t
+  | surroundedBy '\'' = T.dropAround (== '\'') t
+  | otherwise         = t
+  where
+    surroundedBy c =
+      T.head t == '"'  && T.last t == '"'
 
 
 isSignatureQuery :: T.Text -> Bool
-isSignatureQuery q
-  = "->" `T.isInfixOf` q
-    ||
-    "=>" `T.isInfixOf` q
+isSignatureQuery q =
+  "->" `T.isInfixOf` q || "=>" `T.isInfixOf` q

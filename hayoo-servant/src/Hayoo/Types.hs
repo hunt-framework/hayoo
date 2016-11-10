@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.App.Types
+module Hayoo.Types
   ( -- * Types
     ResultType (..)
   , PackageVersionResult (..)

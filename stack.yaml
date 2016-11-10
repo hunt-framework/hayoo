@@ -3,12 +3,15 @@ packages:
   - ./hayoo-servant
   - ./hayooLib
   - ./hayooIndexer
-  - ./newHayooIndexer
+  #- ./newHayooIndexer
   - ../hunt/hunt-api
   - ../hunt/hunt-client
   - ../hunt/hunt-crawler
   - ../hunt/hunt-searchengine
 extra-deps:
+  - ekg-core-0.1.1.1
+  - ekg-json-0.1.0.3
+  - aeson-1.0.2.1
   - servant-0.9.1.1
   - servant-server-0.9.1.1
   - servant-client-0.9.1.1
