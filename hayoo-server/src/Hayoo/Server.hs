@@ -65,9 +65,13 @@ serverT store = searchAPI
 -- APIS
 
 searchAPI :: ServerT SearchAPI HayooApp
-searchAPI = measuredSearch
+searchAPI = measuredSearch'
        :<|> measuredSearch
   where
+    measuredSearch' :: Maybe T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
+    measuredSearch' q = measuredSearch query
+      where query = fromMaybe "" q
+
     measuredSearch :: T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
     measuredSearch query p = measure searches (search query page)
       where page = fromMaybe 0 p

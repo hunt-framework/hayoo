@@ -82,9 +82,7 @@ newMetrics store = do
 -- API
 
 measure :: (HayooMetrics -> Metric) -> HayooApp a -> HayooApp a
-measure get action = do
-  metric <- asks (get . envMetrics)
-  measureAndStore metric action
+measure get action = asks (get . envMetrics) >>= measureAndStore action
 
 
 search :: T.Text -> Int -> HayooApp (HC.LimitedResult SearchResult)

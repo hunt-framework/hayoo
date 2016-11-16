@@ -51,8 +51,8 @@ stats :: (MonadIO m) => Metric -> m Stats
 stats = liftIO . EKGD.read . distribution
 
 
-measureAndStore :: (MonadIO m) => Metric -> m a -> m a
-measureAndStore metric action = do
+measureAndStore :: (MonadIO m) => m a -> Metric -> m a
+measureAndStore action metric = do
   liftIO $ EKGC.inc $ counter metric -- Note: it's intended to count regardless of errors
   (result, timeDelta) <- measureExecTime action
   liftIO $ EKGD.add (distribution metric) timeDelta

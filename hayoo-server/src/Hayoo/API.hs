@@ -39,7 +39,7 @@ type RestAPI = SearchAPI
 
 type SearchAPI =
           "json" -- Legacy
-          :> Capture "query" T.Text
+          :> QueryParam "query" T.Text
           :> QueryParam "page" Int
           :> Get '[JSON] (LimitedResult SearchResult)
      :<|> "search"
