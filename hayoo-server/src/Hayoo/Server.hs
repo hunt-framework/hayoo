@@ -16,6 +16,7 @@ import qualified Data.Text                  as T
 import           Hayoo.API
 import           Hayoo.App
 import           Hayoo.Server.Configuration
+import qualified Hayoo.Server.View          as V
 import           Hayoo.Types
 import qualified Hunt.Client                as HC
 import           Hunt.ClientInterface       (LimitedResult)
@@ -28,6 +29,7 @@ import           Servant.Utils.StaticFiles  (serveDirectory)
 import           System.Metrics             (Store)
 import qualified System.Metrics             as EKG
 import           System.Metrics.Json        (Sample (Sample))
+import qualified Text.Blaze.Html5           as H
 
 
 -- SERVER
@@ -56,11 +58,12 @@ server store path env = enter hayooAppToEither (serverT store)
     hayooErrToServantErr _ = err500 { errBody = "Internal server error" }
 
 
+
 serverT :: Store -> ServerT RestAPI HayooApp
 serverT store = searchAPI
            :<|> completionAPI
            :<|> metricsAPI store
-
+           :<|> htmlAPI
 
 -- APIS
 
@@ -85,3 +88,18 @@ completionAPI =
 metricsAPI :: Store -> ServerT MetricsAPI HayooApp
 metricsAPI store = metrics store
               :<|> metrics store
+
+
+htmlAPI :: ServerT HtmlAPI HayooApp
+htmlAPI = about
+     :<|> examples
+     :<|> index
+  where
+    about :: HayooApp H.Html
+    about = error "Not implemented yet"
+
+    examples :: HayooApp H.Html
+    examples = error "Not implemented yet"
+
+    index :: Maybe T.Text -> HayooApp H.Html
+    index query = return $ V.searchPage $ fromMaybe "" query

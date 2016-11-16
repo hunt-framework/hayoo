@@ -22,6 +22,7 @@ executable hayoo-server
                      , Hayoo.API
                      , Hayoo.Server
                      , Hayoo.Server.Configuration
+                     , Hayoo.Server.View
   build-depends:       base >= 4.7 && < 5
                      , optparse-applicative
                      , aeson
@@ -33,9 +34,11 @@ executable hayoo-server
                      , mtl
                      , parsec
                      , servant
+                     , servant-blaze
                      , servant-server
                      , servant-client
                      , scientific
+                     , blaze-html
                      , text
                      , time
                      , wai

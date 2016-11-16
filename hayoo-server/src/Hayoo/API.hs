@@ -6,6 +6,7 @@ module Hayoo.API
   ( -- * API
     HayooAPI
   , RestAPI
+  , HtmlAPI
   , SearchAPI
   , AutocompleteAPI
   , MetricsAPI
@@ -19,6 +20,8 @@ import qualified Data.Text            as T
 import           Hayoo.Types          (SearchResult)
 import           Hunt.ClientInterface (LimitedResult)
 import           Servant
+import           Servant.HTML.Blaze
+import           Text.Blaze.Html5            (Html)
 import           System.Metrics.Json  (Sample)
 
 
@@ -29,12 +32,13 @@ hayooAPI = Proxy
 
 
 type HayooAPI = RestAPI
-           :<|> Raw
+           :<|> "static" :> Raw
 
 
 type RestAPI = SearchAPI
           :<|> AutocompleteAPI
           :<|> MetricsAPI
+          :<|> HtmlAPI
 
 
 type SearchAPI =
@@ -58,4 +62,12 @@ type MetricsAPI =
           "stats"   :> Get '[JSON] Sample
      :<|> "metrics" :> Get '[JSON] Sample
 
+
+type HtmlAPI =
+      "about"
+      :> Get '[HTML] Html
+ :<|> "examples"
+      :> Get '[HTML] Html
+ :<|> QueryParam "query" T.Text
+      :> Get '[HTML] Html
 
