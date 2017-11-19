@@ -17,7 +17,8 @@ import           Data.Int                    (Int64)
 import qualified Data.Text                   as T
 import           Data.Time                   (diffUTCTime, getCurrentTime)
 import           System.Metrics              (Store)
-import           System.Metrics              (sampleAll, createCounter, createDistribution)
+import           System.Metrics              (createCounter, createDistribution,
+                                              sampleAll)
 import           System.Metrics.Counter      (Counter)
 import qualified System.Metrics.Counter      as EKGC
 import           System.Metrics.Distribution (Distribution, Stats)
@@ -25,12 +26,15 @@ import qualified System.Metrics.Distribution as EKGD
 import qualified System.Metrics.Json         as EKGJ
 
 
+
 -- TYPES
+
 
 data Metric = Metric
   { counter      :: Counter
   , distribution :: Distribution
   }
+
 
 
 -- OPERATIONS

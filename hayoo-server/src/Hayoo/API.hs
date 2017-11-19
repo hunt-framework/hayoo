@@ -26,14 +26,22 @@ import           System.Metrics.Json  (Sample)
 import           Text.Blaze.Html5     (Html)
 
 
--- API
+
+-- PROXY
+
 
 hayooAPI :: Proxy HayooAPI
-hayooAPI = Proxy
+hayooAPI =
+  Proxy
 
 
 restAPI :: Proxy RestAPI
-restAPI = Proxy
+restAPI =
+  Proxy
+
+
+
+-- API
 
 
 type HayooAPI = RestAPI
@@ -75,4 +83,3 @@ type HtmlAPI =
       :> Get '[HTML] Html
  :<|> QueryParam "query" T.Text
       :> Get '[HTML] Html
-

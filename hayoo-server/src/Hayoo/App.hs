@@ -37,14 +37,21 @@ import           Hunt.ClientInterface (qAnd, qAnds, qContext, qFullWord, qOrs,
 import qualified Hunt.ClientInterface as HC
 import           Servant.Client       (ClientEnv, ClientM, ServantError)
 import           System.Metrics.Json  (Sample)
-import qualified Text.Parsec          as P
+
 
 
 -- TYPES
 
+
 newtype HayooApp a = HayooApp
   { unHayoo :: ReaderT HayooEnv (ExceptT HayooErr IO) a
-  } deriving (Functor, Applicative, Monad, MonadIO, MonadReader HayooEnv, MonadError HayooErr)
+  } deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadIO
+             , MonadReader HayooEnv
+             , MonadError HayooErr
+             )
 
 
 data HayooEnv = HayooEnv
@@ -54,35 +61,23 @@ data HayooEnv = HayooEnv
 
 
 data HayooErr
-  = ParserErr P.ParseError
-  | HuntClientErr ServantError
+  = HuntClientErr ServantError
   | InvalidCmdResult HC.CmdResult
   deriving (Show)
 
 
 data HayooMetrics = HayooMetrics
-  { searches    :: !Metric
-  , completions :: !Metric
+  { _searches    :: !Metric
+  , _completions :: !Metric
   }
 
 
 -- OPERATIONS
 
+
 runHayoo :: HayooApp a -> HayooEnv -> IO (Either HayooErr a)
-runHayoo app env = runExceptT $ runReaderT (unHayoo app) env
-
-
-newMetrics :: (MonadIO m) => Store -> m HayooMetrics
-newMetrics store = do
-  searches    <- createMetric "searches" "searchStats" store
-  completions <- createMetric "completions" "completionStats" store
-  return $ HayooMetrics searches completions
-
-
--- API
-
-measure :: (HayooMetrics -> Metric) -> HayooApp a -> HayooApp a
-measure get action = asks (get . envMetrics) >>= measureAndStore action
+runHayoo app env =
+  runExceptT (runReaderT (unHayoo app) env)
 
 
 search :: T.Text -> Int -> HayooApp (HC.LimitedResult SearchResult)
@@ -118,11 +113,9 @@ selectPackageVersion packageName = do
       throwError $ InvalidCmdResult clientResult
 
 
-metrics :: Store -> HayooApp Sample
-metrics = collectStats
-
 
 -- HUNT COMMANDS
+
 
 packageVersionCmd :: T.Text -> HC.Command
 packageVersionCmd packageName =
@@ -134,7 +127,9 @@ packageVersionCmd packageName =
       ]
 
 
+
 -- QUERIES
+
 
 parseHayooQuery :: T.Text -> HC.Query
 parseHayooQuery q = qOrs $ concat [stdq, sigq, defq]
@@ -145,7 +140,7 @@ parseHayooQuery q = qOrs $ concat [stdq, sigq, defq]
     stdq :: [HC.Query]
     stdq
       | isSig     = []
-      | otherwise = either (const []) (:[])   -- throw away errors
+      | otherwise = either (const []) (:[])            -- throw away errors
                     $ HC.parseQuery (T.unpack q)       -- try to parse q as hunt query
 
     defq :: [HC.Query]
@@ -195,7 +190,30 @@ parseHayooQuery q = qOrs $ concat [stdq, sigq, defq]
                 ) sig
 
 
+
+-- METRICS
+
+
+newMetrics :: (MonadIO m) => Store -> m HayooMetrics
+newMetrics store = do
+  searches    <- createMetric "searches" "searchStats" store
+  completions <- createMetric "completions" "completionStats" store
+  return $ HayooMetrics searches completions
+
+
+measure :: (HayooMetrics -> Metric) -> HayooApp a -> HayooApp a
+measure get action =
+  asks (get . envMetrics) >>= measureAndStore action
+
+
+metrics :: Store -> HayooApp Sample
+metrics =
+  collectStats
+
+
+
 -- HELPERS
+
 
 runRequest :: ClientM a -> HayooApp a
 runRequest req = do
@@ -206,7 +224,7 @@ runRequest req = do
 
 packageVersion :: [PackageVersionResult] -> Maybe T.Text
 packageVersion (PackageVersionResult v:[]) = Just v
-packageVersion _ = Nothing
+packageVersion _                           = Nothing
 
 
 removeQuotes :: T.Text -> T.Text

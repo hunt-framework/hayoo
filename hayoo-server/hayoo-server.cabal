@@ -35,7 +35,6 @@ executable hayoo-server
                      , hunt-client
                      , hunt-searchengine
                      , mtl
-                     , parsec
                      , servant
                      , servant-blaze
                      , servant-server

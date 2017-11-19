@@ -10,6 +10,7 @@ module Hayoo.Server
   , hayooConfig
   ) where
 
+
 import           Control.Monad.Except
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text                  as T
@@ -32,7 +33,9 @@ import           System.Metrics.Json        (Sample (Sample))
 import qualified Text.Blaze.Html5           as H
 
 
+
 -- SERVER
+
 
 runHayooServer :: HayooServerConfiguration -> IO ()
 runHayooServer config = do
@@ -65,7 +68,9 @@ serverT store = searchAPI
            :<|> metricsAPI store
            :<|> htmlAPI
 
+
 -- APIS
+
 
 searchAPI :: ServerT SearchAPI HayooApp
 searchAPI = measuredSearch'
@@ -76,13 +81,13 @@ searchAPI = measuredSearch'
       where query = fromMaybe "" q
 
     measuredSearch :: T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
-    measuredSearch query p = measure searches (search query page)
+    measuredSearch query p = measure _searches (search query page)
       where page = fromMaybe 0 p
 
 
 completionAPI :: ServerT AutocompleteAPI HayooApp
 completionAPI =
-  measure completions . autocomplete
+  measure _completions . autocomplete
 
 
 metricsAPI :: Store -> ServerT MetricsAPI HayooApp
