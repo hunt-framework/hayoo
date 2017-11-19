@@ -5,6 +5,7 @@ module Hayoo.Types
     ResultType (..)
   , PackageVersionResult (..)
   , SearchResult (..)
+  , HayooException (..)
 
     -- * Operations
   , contextQueryToQuery
@@ -25,6 +26,16 @@ import qualified Text.Read            as TR
 
 
 -- TYPES
+
+
+data HayooException
+  = ParseError
+  | HuntClientException
+  | HttpException
+  | StringException
+  | FileNotFound
+  deriving (Show)
+
 
 data ResultType
   = Class
@@ -144,7 +155,7 @@ instance FromJSON SearchResult where
 
 getSRPackage :: SearchResult -> T.Text
 getSRPackage sr@NonPackageResult{} = resultPackage sr
-getSRPackage sr@PackageResult{} = resultName sr
+getSRPackage sr@PackageResult{}    = resultName sr
 
 
 contextQueryToQuery :: ContextQuery -> SearchResult -> Query

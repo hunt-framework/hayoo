@@ -1,0 +1,22 @@
+<h1 id="example-search-queries">Example Search Queries</h1>
+<p>If you did not find what you searched for, you can try to search for specific properties by prefixing them.</p>
+<p><a href="/?query=name:mapM">name:mapM</a> searches for the function name mapM in all packages.</p>
+<p><a href="/?query=package:base">package:base</a> searches for the base package.</p>
+<p><a href="/?query=a%20-%3E%20a">a -&gt; a</a> searches for functions with this signature in all packages.</p>
+<p><a href="/?query=module:Control.Exception">module:Control.Exception</a> searches for a specific module in all packages.</p>
+<h2 id="combination">Combination</h2>
+<p>It is also possible to combine search queries:</p>
+<p><a href="/?query=package:base%20mapM">package:base mapM</a> searches for the function name mapM in the base package.</p>
+<p><a href="/?query=mapM%20OR%20foldM">MapM or foldM</a> searches for either MapM or foldM.</p>
+<p><a href="/?query=map%20AND%20NOT%20package:base">map AND NOT package:base</a> searches for map, but not in the base package.</p>
+<h2 id="modification">Modification</h2>
+<p>You can also modify search queries:</p>
+<p><a href="/?query=%22Map%20each%20element%22">&quot;Map each element&quot;</a> searches for the string &quot;Map each element&quot;.</p>
+<p><a href="/?query=%21mapM">!mapM</a> searches case-sensitive for mapM.</p>
+<!--[~maMpaybe](/?query=~maMpaybe) is a fuzzy search and will show mapMaybe-->
+<h2 id="range">Range</h2>
+<p><a href="/?query=upload:%5B2014-01-01T00:00:00%20TO%202015-01-01T00:00:00%5D">&quot;upload:[2014-01-01T00:00:00 TO 2015-01-01T00:00:00]&quot;</a> searches for all packages, that were uploaded in 2014.</p>
+<h1 id="badges-hayoo-badge">Badges <img src="https://hayoo.fh-wedel.de/packages/hunt-searchengine/badge" alt="Hayoo Badge" /></h1>
+<p>Hayoo! supports badges for your projects now. If you want to show which version of your package is indexed in Hayoo! you can include following snippet on your web page:</p>
+<pre><code>&lt;a href=&quot;hayoo.fh-wedel.de?query=packagename&quot;&gt;
+    &lt;img src&quot;hayoo.fh-wedel.de/packages/packagename/badge&quot; alt=&quot;packagename on Hayoo!&quot;&gt;&lt;/img&gt;&lt;/a&gt;</code></pre>

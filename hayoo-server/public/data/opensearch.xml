@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Hayoo!</ShortName>
+  <Description>Hayoo! Haskell API Search</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <OutputEncoding>UTF-8</OutputEncoding>
+  <Url type="application/opensearchdescription+xml" rel="self" template="https://hayoo.fh-wedel.de/opensearch.xml"/>
+  <Url type="application/x-suggestions+json" method="GET" template="https://hayoo.fh-wedel.de/opensearch?term={searchTerms}" />
+  <Url type="text/html" method="GET" template="https://hayoo.fh-wedel.de/?query={searchTerms}" />
+</OpenSearchDescription>

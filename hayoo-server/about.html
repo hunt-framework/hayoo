@@ -1,0 +1,14 @@
+<h1 id="about">About</h1>
+<h2 id="what-is-hayoo">What is Hayoo?</h2>
+<p>Hayoo is a search engine for <a href="http://hackage.haskell.org/" title="Hackage">Hackage</a> packages, which allows you to search for functions, data types and packages. Each indexed document consists of a name, a description and, if applicable, a signature. Have a look at the <a href="/Examples.md">examples</a> on how to use Hayoo. In constrast to <a href="http://www.haskell.org/hoogle/">Hoogle</a>, all available packages are indexed, but the signature search is not as advanced.</p>
+<h2 id="hunt">Hunt</h2>
+<p>Hayoo uses <a href="http://huntsearch.org" title="huntsearch.org">Hunt</a> for indexing and searching. Hunt is a flexible, lightweight search platform with a powerful query language and JSON API. Hayoo exposes the query language through its own interface and allows the execution of advanced queries.</p>
+<p>Additionally, Hunt consists of a standalone web server for easy integration into existing infrastructures without having to write Haskell code.</p>
+<h2 id="json-api">JSON API</h2>
+<p>Hayoo exposes a JSON API for other clients via <a href="/json?query=Monad">/json</a>. The <a href="/json?query=Monad&amp;page=2">page</a> parameter can be used to cycle through the pages.</p>
+<h2 id="feedback">Feedback</h2>
+<p>Any feedback is greatly appreciated! You can contact us via e-mail (<a href="&#x6d;&#x61;&#x69;&#108;&#116;&#x6f;&#58;&#104;&#x61;&#x79;&#x6f;&#x6f;&#50;&#64;&#102;&#104;&#x2d;&#x77;&#x65;&#100;&#x65;&#108;&#46;&#100;&#x65;" class="email">&#104;&#x61;&#x79;&#x6f;&#x6f;&#50;&#64;&#102;&#104;&#x2d;&#x77;&#x65;&#100;&#x65;&#108;&#46;&#100;&#x65;</a>) or use the <a href="https://github.com/hunt-framework/hayoo/issues" title="Hayoo Issues">issue system</a> to report bugs or suggest features.</p>
+<h2 id="history">History</h2>
+<p>The old Hayoo! was based on the <a href="//github.com/fortytools/holumbus" title="Holumbus on GitHub">Holumbus search engine</a>, which was developed in 2008-2009 by <a href="//github.com/tbk303">Timo B. Kranz</a> and <a href="https://twitter.com/sgauck">Sebastian M. Gauck</a>.</p>
+<p>The new Hayoo is a rewrite on top of the Hunt search engine, the successor of Holumbus, which was started in 2013 by <a href="//github.com/ulfS">Ulf Sauer</a> and <a href="//github.com/chrisreu">Chris Reumann</a> to improve and extend the existing Holumbus framework.</p>
+<p>Both projects were developed at the <a href="http://fh-wedel.de">FH Wedel</a> under supervision and active support of <a href="http://fh-wedel.de/~si">Prof. Dr. Uwe Schmidt</a>.</p>

@@ -22,8 +22,11 @@ executable hayoo-server
                      , Hayoo.API
                      , Hayoo.Server
                      , Hayoo.Server.Configuration
-                     , Hayoo.Server.View
+                     , Hayoo.Server.Templates
   build-depends:       base >= 4.7 && < 5
+                     , blaze-html
+                     , blaze-markup
+                     , blaze-svg
                      , optparse-applicative
                      , aeson
                      , ekg-core
@@ -38,6 +41,7 @@ executable hayoo-server
                      , servant-server
                      , servant-client
                      , scientific
+                     , shakespeare
                      , blaze-html
                      , text
                      , time

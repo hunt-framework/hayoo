@@ -16,7 +16,7 @@ import qualified Data.Text                  as T
 import           Hayoo.API
 import           Hayoo.App
 import           Hayoo.Server.Configuration
-import qualified Hayoo.Server.View          as V
+import qualified Hayoo.Server.Templates     as Templates
 import           Hayoo.Types
 import qualified Hunt.Client                as HC
 import           Hunt.ClientInterface       (LimitedResult)
@@ -96,10 +96,13 @@ htmlAPI = about
      :<|> index
   where
     about :: HayooApp H.Html
-    about = error "Not implemented yet"
+    about =
+      pure (Templates.body "" Templates.about)
 
     examples :: HayooApp H.Html
-    examples = error "Not implemented yet"
+    examples =
+      pure (Templates.body "" Templates.examples)
 
     index :: Maybe T.Text -> HayooApp H.Html
-    index query = return $ V.searchPage $ fromMaybe "" query
+    index query =
+      pure (Templates.body "" Templates.index)
