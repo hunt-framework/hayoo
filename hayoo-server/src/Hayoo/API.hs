@@ -13,6 +13,7 @@ module Hayoo.API
 
     -- * Proxy
   , hayooAPI
+  , restAPI
   ) where
 
 
@@ -21,14 +22,18 @@ import           Hayoo.Types          (SearchResult)
 import           Hunt.ClientInterface (LimitedResult)
 import           Servant
 import           Servant.HTML.Blaze
-import           Text.Blaze.Html5            (Html)
 import           System.Metrics.Json  (Sample)
+import           Text.Blaze.Html5     (Html)
 
 
 -- API
 
 hayooAPI :: Proxy HayooAPI
 hayooAPI = Proxy
+
+
+restAPI :: Proxy RestAPI
+restAPI = Proxy
 
 
 type HayooAPI = RestAPI

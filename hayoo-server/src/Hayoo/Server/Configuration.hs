@@ -8,6 +8,7 @@ module Hayoo.Server.Configuration
   , hayooConfig
   ) where
 
+import           Data.Semigroup      ((<>))
 import qualified Data.Text           as T
 import qualified Hunt.Client         as HC
 import           Options.Applicative

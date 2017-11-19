@@ -25,7 +25,7 @@ import           Network.Wai.Handler.Warp   (run)
 import           Servant
 import           Servant.Client             (BaseUrl)
 import           Servant.Server
-import           Servant.Utils.StaticFiles  (serveDirectory)
+import           Servant.Utils.StaticFiles  (serveDirectoryFileServer)
 import           System.Metrics             (Store)
 import qualified System.Metrics             as EKG
 import           System.Metrics.Json        (Sample (Sample))
@@ -46,12 +46,12 @@ runHayooServer config = do
 
 
 server :: Store -> FilePath -> HayooEnv -> Server HayooAPI
-server store path env = enter hayooAppToEither (serverT store)
-                   :<|> serveDirectory path
+server store path env = hoistServer restAPI hayooAppToHandler (serverT store)
+                   :<|> serveDirectoryFileServer path
   where
-    hayooAppToEither :: HayooApp :~> ExceptT ServantErr IO
-    hayooAppToEither = Nat $ \app -> do
-      result <- liftIO $ runHayoo app env
+    hayooAppToHandler :: HayooApp a -> Handler a
+    hayooAppToHandler app = do
+      result <- liftIO (runHayoo app env)
       either (throwError . hayooErrToServantErr) return result
 
     hayooErrToServantErr :: HayooErr -> ServantErr

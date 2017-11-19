@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import           Data.Monoid         ((<>))
 import           Hayoo.Server
 import           Options.Applicative
 
