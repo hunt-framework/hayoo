@@ -2,13 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
-
 module Hayoo.Server.Templates
   ( body
   , index
   , examples
   , about
   ) where
+
 
 import           Data.Monoid                     ((<>))
 import qualified Data.Text                       as T
@@ -22,6 +22,7 @@ import qualified Text.Blaze.Svg11.Attributes     as A
 import qualified Text.Hamlet                     as Hamlet (HtmlUrl, hamlet,
                                                             hamletFile)
 
+import           Hayoo.Internal.Helpers          ((|>))
 import           Hayoo.Types                     (HayooException (..),
                                                   ResultType (..),
                                                   SearchResult (..),
@@ -459,11 +460,6 @@ renderBadge version =
 
 
 -- HELPERS
-
-
-(|>) :: a -> (a -> b) -> b
-(|>) a f =
-  f a
 
 
 escapeScript :: (SearchResult -> T.Text) -> SearchResult -> T.Text
