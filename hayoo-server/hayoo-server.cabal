@@ -23,6 +23,7 @@ executable hayoo-server
                      , Hayoo.Server
                      , Hayoo.Server.Configuration
                      , Hayoo.Server.Templates
+                     , Hayoo.Internal.Helpers
   build-depends:       base >= 4.7 && < 5
                      , blaze-html
                      , blaze-markup
@@ -32,9 +33,11 @@ executable hayoo-server
                      , ekg-core
                      , ekg-json 
                      , hayooLib
+                     , htoml
                      , hunt-client
                      , hunt-searchengine
                      , mtl
+                     , parsec
                      , servant
                      , servant-blaze
                      , servant-server

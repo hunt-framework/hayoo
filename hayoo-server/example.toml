@@ -1,0 +1,14 @@
+# Example Configuration
+#
+# This file is an example for the configuration
+# of the Hayoo! server.
+
+
+[server]
+host      = "localhost"
+port      = 3002
+publicDir = "public"
+
+
+[hunt]
+baseUrl = "http://localhost:3000"

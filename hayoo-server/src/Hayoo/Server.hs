@@ -2,12 +2,12 @@
 {-# LANGUAGE TypeOperators     #-}
 module Hayoo.Server
   ( -- * Server
-    runHayooServer
+    runServer
 
     -- * Server Configuration
-  ,  HayooServerConfiguration (..)
-  , serverConfig
-  , hayooConfig
+  , Hayoo.Config (..)
+  , Hayoo.defaultConfig
+  , Hayoo.readTomlFile
   ) where
 
 
@@ -16,7 +16,7 @@ import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text                  as T
 import           Hayoo.API
 import           Hayoo.App
-import           Hayoo.Server.Configuration
+import qualified Hayoo.Server.Configuration as Hayoo
 import qualified Hayoo.Server.Templates     as Templates
 import           Hayoo.Types
 import qualified Hunt.Client                as HC
@@ -37,13 +37,13 @@ import qualified Text.Blaze.Html5           as H
 -- SERVER
 
 
-runHayooServer :: HayooServerConfiguration -> IO ()
-runHayooServer config = do
+runServer :: Hayoo.Config -> IO ()
+runServer config = do
   store <- EKG.newStore
   EKG.registerGcMetrics store
-  env <- HayooEnv <$> HC.withBaseUrl HC.huntBaseUrl <*> newMetrics store
-  let port = hayooServerPort config
-      server' = server store (hayooPublicDir config) env
+  env <- HayooEnv <$> HC.withBaseUrl (Hayoo.baseUrl (Hayoo.hunt config)) <*> newMetrics store
+  let port = Hayoo.port (Hayoo.server config)
+      server' = server store (Hayoo.publicDir (Hayoo.server config)) env
   putStrLn $ "Starting hayoo server on port " ++ show port
   run port $ serve hayooAPI server'
 
@@ -61,12 +61,12 @@ server store path env = hoistServer restAPI hayooAppToHandler (serverT store)
     hayooErrToServantErr _ = err500 { errBody = "Internal server error" }
 
 
-
 serverT :: Store -> ServerT RestAPI HayooApp
 serverT store = searchAPI
            :<|> completionAPI
            :<|> metricsAPI store
            :<|> htmlAPI
+
 
 
 -- APIS

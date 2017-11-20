@@ -1,82 +1,111 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Hayoo.Server.Configuration
   ( -- * Server configuration
-    HayooServerConfiguration (..)
-  , serverConfig
-
-    -- * Command line parser
-  , hayooConfig
+    Config (..)
+  , ServerConfig (..)
+  , HuntConfig (..)
+  , defaultConfig
+  , readTomlFile
   ) where
 
-import           Data.Semigroup      ((<>))
-import qualified Data.Text           as T
-import qualified Hunt.Client         as HC
-import           Options.Applicative
-import           Servant.Client      (BaseUrl, parseBaseUrl)
+
+import           Data.Aeson
+import qualified Data.Aeson.Types       as Json
+import           Data.Monoid            (mconcat, (<>))
+import qualified Data.Text              as T
+import qualified Data.Text.IO           as T
+import           GHC.Generics
+import           Hayoo.Internal.Helpers ((|>))
+import qualified Hunt.Client            as HC
+import           Servant.Client         (BaseUrl, parseBaseUrl)
+import qualified Text.Parsec            as P
+import qualified Text.Toml              as Toml
 
 
--- TYPES
 
-data HayooServerConfiguration = HayooServerConfiguration
-  { hayooServerHost :: !T.Text
-  , hayooServerPort :: !Int
-  , hayooPublicDir  :: !FilePath
-  , huntBaseUrl     :: !BaseUrl
-  } deriving (Show)
+-- CONFIG
 
 
-serverConfig :: HayooServerConfiguration
-serverConfig = HayooServerConfiguration
-  { hayooServerHost = "localhost"
-  , hayooServerPort = 3001
-  , hayooPublicDir  = "public"
-  , huntBaseUrl     = HC.huntBaseUrl
+data Config
+  = Config
+    { server :: !ServerConfig
+    , hunt   :: !HuntConfig
+    } deriving (Show, Generic)
+
+
+data ServerConfig
+  = ServerConfig
+    { host      :: !T.Text
+    , port      :: !Int
+    , publicDir :: !FilePath
+    } deriving (Show, Generic)
+
+
+data HuntConfig
+  = HuntConfig
+    { baseUrl :: !BaseUrl
+    } deriving (Show, Generic)
+
+
+
+-- PRIVATE HELPERS
+
+
+formatParseError :: P.ParseError -> String
+formatParseError parseError =
+  let
+    pos =
+      P.errorPos parseError
+  in
+    mconcat
+    [ "I could not read the provided configuration file. "
+    , "Are you sure, this is a valid .toml configuration for Hayoo? "
+    , "I found something troubling in \n\n"
+    , "    line " ++ show (P.sourceLine pos) ++ "; column " ++ show (P.sourceColumn pos)
+    , "\n\nYou can take a look at a valid example configuration here:\n"
+    , "https://github.com/hunt-framework/hayoo/tree/master/hayoo-server/example.toml"
+    ]
+
+
+
+-- PUBLIC HELPERS
+
+
+defaultConfig :: Config
+defaultConfig = Config
+  { server = ServerConfig "localhost" 3001 "public"
+  , hunt = HuntConfig HC.huntBaseUrl
   }
 
 
--- PARSER
+readTomlFile :: FilePath -> IO (Either String Config)
+readTomlFile file = do
+  content <- T.readFile file
+  pure $
+    content
+      |> Toml.parseTomlDoc ""
+      |> fmap encode
+      |> either (Left . formatParseError) pure
+      >>= eitherDecode
 
-hayooConfig :: Parser HayooServerConfiguration
-hayooConfig =
-  HayooServerConfiguration
-  <$> hostOption
-  <*> portOption
-  <*> publicDirOption
-  <*> huntUrlOption
-  where
-    defaultHost      = hayooServerHost serverConfig
-    defaultPort      = hayooServerPort serverConfig
-    defaultPublicDir = hayooPublicDir serverConfig
-    defaultHuntUrl   = huntBaseUrl serverConfig
 
-    hostOption = option auto
-      ( long "host"
-      <> short 'h'
-      <> metavar "HOST"
-      <> help ("Host of Hayoo! server, defaults to '" ++ (T.unpack defaultHost) ++ "'"))
-      <|> pure defaultHost
 
-    portOption = option auto
-      ( long "port"
-      <> short 'p'
-      <> metavar "PORT"
-      <> help ("Port to run the server on, defaults to " ++ show defaultPort))
-      <|> pure defaultPort
+-- INSTANCES
 
-    publicDirOption = option auto
-      ( long "static-dir"
-      <> short 'd'
-      <> metavar "DIR"
-      <> help ("Directory for static assets, defaults to \"$(pwd)/public\""))
-      <|> pure defaultPublicDir
 
-    huntUrlOption = option parseUrl
-     ( long "hunt-server-url"
-      <> short 's'
-      <> metavar "URL"
-      <> value defaultHuntUrl
-      <> (help $ "Base URL of the backing Hunt server. Defaults to " ++ show defaultHuntUrl ))
-      where
-        parseUrl = eitherReader $
-          either (Left . show) Right . parseBaseUrl
+instance FromJSON Config
+instance FromJSON ServerConfig
+instance FromJSON HuntConfig where
+  parseJSON (Object v) = do
+    input <- v .: "baseUrl"
+    case parseBaseUrl (T.unpack input) of
+      Nothing ->
+        fail ("The url `" ++ T.unpack input ++ "` is not a valid BaseUrl")
+
+      Just parsedBaseUrl ->
+        pure (HuntConfig parsedBaseUrl)
+
+  parseJSON e =
+    Json.typeMismatch "HuntConfig" e
 
