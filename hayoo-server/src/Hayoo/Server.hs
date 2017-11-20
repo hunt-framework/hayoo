@@ -15,7 +15,8 @@ import           Control.Monad.Except
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text                  as T
 import           Hayoo.API
-import           Hayoo.App
+import qualified Hayoo.App                  as Hayoo
+import           Hayoo.Internal.Helpers     ((|>))
 import qualified Hayoo.Server.Configuration as Hayoo
 import qualified Hayoo.Server.Templates     as Templates
 import           Hayoo.Types
@@ -41,27 +42,27 @@ runServer :: Hayoo.Config -> IO ()
 runServer config = do
   store <- EKG.newStore
   EKG.registerGcMetrics store
-  env <- HayooEnv <$> HC.withBaseUrl (Hayoo.baseUrl (Hayoo.hunt config)) <*> newMetrics store
+  env <- Hayoo.Env <$> HC.withBaseUrl (Hayoo.baseUrl (Hayoo.hunt config)) <*> Hayoo.newMetrics store
   let port = Hayoo.port (Hayoo.server config)
       server' = server store (Hayoo.publicDir (Hayoo.server config)) env
   putStrLn $ "Starting hayoo server on port " ++ show port
   run port $ serve hayooAPI server'
 
 
-server :: Store -> FilePath -> HayooEnv -> Server HayooAPI
+server :: Store -> FilePath -> Hayoo.Env -> Server HayooAPI
 server store path env = hoistServer restAPI hayooAppToHandler (serverT store)
                    :<|> serveDirectoryFileServer path
   where
-    hayooAppToHandler :: HayooApp a -> Handler a
+    hayooAppToHandler :: Hayoo.App a -> Handler a
     hayooAppToHandler app = do
-      result <- liftIO (runHayoo app env)
-      either (throwError . hayooErrToServantErr) return result
+      result <- liftIO (Hayoo.run app env)
+      either (throwError . hayooErrToServantErr) pure result
 
-    hayooErrToServantErr :: HayooErr -> ServantErr
+    hayooErrToServantErr :: Hayoo.Error -> ServantErr
     hayooErrToServantErr _ = err500 { errBody = "Internal server error" }
 
 
-serverT :: Store -> ServerT RestAPI HayooApp
+serverT :: Store -> ServerT RestAPI Hayoo.App
 serverT store = searchAPI
            :<|> completionAPI
            :<|> metricsAPI store
@@ -72,42 +73,47 @@ serverT store = searchAPI
 -- APIS
 
 
-searchAPI :: ServerT SearchAPI HayooApp
+searchAPI :: ServerT SearchAPI Hayoo.App
 searchAPI = measuredSearch'
        :<|> measuredSearch
   where
-    measuredSearch' :: Maybe T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
+    measuredSearch' :: Maybe T.Text -> Maybe Int -> Hayoo.App (LimitedResult SearchResult)
     measuredSearch' q = measuredSearch query
       where query = fromMaybe "" q
 
-    measuredSearch :: T.Text -> Maybe Int -> HayooApp (LimitedResult SearchResult)
-    measuredSearch query p = measure _searches (search query page)
-      where page = fromMaybe 0 p
+    measuredSearch :: T.Text -> Maybe Int -> Hayoo.App (LimitedResult SearchResult)
+    measuredSearch query page =
+      page
+        |> fromMaybe 0
+        |> Hayoo.search query
+        |> Hayoo.measure Hayoo._searches
 
 
-completionAPI :: ServerT AutocompleteAPI HayooApp
-completionAPI =
-  measure _completions . autocomplete
+completionAPI :: ServerT AutocompleteAPI Hayoo.App
+completionAPI query =
+  query
+    |> Hayoo.autocomplete
+    |> Hayoo.measure Hayoo._completions
 
 
-metricsAPI :: Store -> ServerT MetricsAPI HayooApp
-metricsAPI store = metrics store
-              :<|> metrics store
+metricsAPI :: Store -> ServerT MetricsAPI Hayoo.App
+metricsAPI store = Hayoo.metrics store
+              :<|> Hayoo.metrics store
 
 
-htmlAPI :: ServerT HtmlAPI HayooApp
+htmlAPI :: ServerT HtmlAPI Hayoo.App
 htmlAPI = about
      :<|> examples
      :<|> index
   where
-    about :: HayooApp H.Html
+    about :: Hayoo.App H.Html
     about =
       pure (Templates.body "" Templates.about)
 
-    examples :: HayooApp H.Html
+    examples :: Hayoo.App H.Html
     examples =
       pure (Templates.body "" Templates.examples)
 
-    index :: Maybe T.Text -> HayooApp H.Html
+    index :: Maybe T.Text -> Hayoo.App H.Html
     index query =
       pure (Templates.body "" Templates.index)

@@ -1,14 +1,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
 module Hayoo.App
-  ( -- * Types
-    HayooApp (..)
-  , HayooEnv (..)
-  , HayooErr (..)
-  , HayooMetrics (..)
+  ( -- * App
+    App (..)
+  , Env (..)
+  , Error (..)
+  , Metrics (..)
+
+    -- * Eval
+  , run
 
     -- * Operations
-  , runHayoo
   , measure
   , search
   , autocomplete
@@ -40,47 +42,49 @@ import           System.Metrics.Json  (Sample)
 
 
 
--- TYPES
+-- APP
 
 
-newtype HayooApp a = HayooApp
-  { unHayoo :: ReaderT HayooEnv (ExceptT HayooErr IO) a
+newtype App a = App
+  { unHayoo :: ReaderT Env (ExceptT Error IO) a
   } deriving ( Functor
              , Applicative
              , Monad
              , MonadIO
-             , MonadReader HayooEnv
-             , MonadError HayooErr
+             , MonadReader Env
+             , MonadError Error
              )
 
 
-data HayooEnv = HayooEnv
-  { envClient  :: !ClientEnv
-  , envMetrics :: !HayooMetrics
-  }
+data Env
+  = Env
+    { envClient  :: !ClientEnv
+    , envMetrics :: !Metrics
+    }
 
 
-data HayooErr
-  = HuntClientErr ServantError
+data Error
+  = HuntClientError ServantError
   | InvalidCmdResult HC.CmdResult
   deriving (Show)
 
 
-data HayooMetrics = HayooMetrics
+data Metrics = Metrics
   { _searches    :: !Metric
   , _completions :: !Metric
   }
 
 
+
 -- OPERATIONS
 
 
-runHayoo :: HayooApp a -> HayooEnv -> IO (Either HayooErr a)
-runHayoo app env =
+run :: App a -> Env -> IO (Either Error a)
+run app env =
   runExceptT (runReaderT (unHayoo app) env)
 
 
-search :: T.Text -> Int -> HayooApp (HC.LimitedResult SearchResult)
+search :: T.Text -> Int -> App (HC.LimitedResult SearchResult)
 search queryText page = runRequest $ HC.search query offset limit
   where
     query  = parseHayooQuery queryText
@@ -88,7 +92,7 @@ search queryText page = runRequest $ HC.search query offset limit
     limit  = Just 20
 
 
-autocomplete :: T.Text -> HayooApp [T.Text]
+autocomplete :: T.Text -> App [T.Text]
 autocomplete queryText = do
   suggestionsWithScore <- runRequest $ HC.complete query Nothing
   return $ handleResults $ fst <$> suggestionsWithScore
@@ -101,7 +105,7 @@ autocomplete queryText = do
       | otherwise = HC.printQuery <$> HC.completeQueries query completions
 
 
-selectPackageVersion :: T.Text -> HayooApp (Maybe T.Text)
+selectPackageVersion :: T.Text -> App (Maybe T.Text)
 selectPackageVersion packageName = do
   result <- runRequest $ HC.eval $ packageVersionCmd packageName
   case result of
@@ -194,19 +198,19 @@ parseHayooQuery q = qOrs $ concat [stdq, sigq, defq]
 -- METRICS
 
 
-newMetrics :: (MonadIO m) => Store -> m HayooMetrics
+newMetrics :: (MonadIO m) => Store -> m Metrics
 newMetrics store = do
   searches    <- createMetric "searches" "searchStats" store
   completions <- createMetric "completions" "completionStats" store
-  return $ HayooMetrics searches completions
+  return $ Metrics searches completions
 
 
-measure :: (HayooMetrics -> Metric) -> HayooApp a -> HayooApp a
+measure :: (Metrics -> Metric) -> App a -> App a
 measure get action =
   asks (get . envMetrics) >>= measureAndStore action
 
 
-metrics :: Store -> HayooApp Sample
+metrics :: Store -> App Sample
 metrics =
   collectStats
 
@@ -215,11 +219,11 @@ metrics =
 -- HELPERS
 
 
-runRequest :: ClientM a -> HayooApp a
+runRequest :: ClientM a -> App a
 runRequest req = do
   client <- asks envClient
   result <- liftIO $ HC.runClientM req client
-  either (throwError . HuntClientErr) return result
+  either (throwError . HuntClientError) return result
 
 
 packageVersion :: [PackageVersionResult] -> Maybe T.Text
