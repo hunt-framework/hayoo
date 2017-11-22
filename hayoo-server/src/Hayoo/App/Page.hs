@@ -149,7 +149,8 @@ moduleUrl result =
     |> LT.fromStrict
 
 
--- SMALL BUILDING BLOCKS
+
+-- PAGE BUILDING BLOCKS
 
 
 page :: Maybe LT.Text -> Hamlet.HtmlUrl Routes -> Html
@@ -341,7 +342,8 @@ viewError hayooError =
       It seems there is a problem with the connection or the result of
       the backing Hunt server. We are sorry, but it seems we are currently
       not able to deliver any search results to you. Still, feel free to
-      take a look at the examples.
+      take a look at the <a href=@{Examples}>examples</a> or what Hayoo! is
+      all <a href=@{About}>about</a>.
 |]
 
 
