@@ -9,6 +9,7 @@ module Hayoo.App
 
     -- * Eval
   , run
+  , observe
 
     -- * Operations
   , measure
@@ -29,9 +30,10 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import           Data.Aeson           (decode, encode)
 import qualified Data.Text            as T
+import           Hayoo.App.Error
 import           Hayoo.App.Metrics
+import           Hayoo.App.Types
 import           Hayoo.ParseSignature
-import           Hayoo.Types
 import qualified Hunt.Client          as HC
 import           Hunt.ClientInterface (qAnd, qAnds, qContext, qFullWord, qOrs,
                                        qPhrase, qWord, qWordNoCase, setBoost,
@@ -63,12 +65,6 @@ data Env
     }
 
 
-data Error
-  = HuntClientError ServantError
-  | InvalidCmdResult HC.CmdResult
-  deriving (Show)
-
-
 data Metrics = Metrics
   { _searches    :: !Metric
   , _completions :: !Metric
@@ -76,12 +72,22 @@ data Metrics = Metrics
 
 
 
--- OPERATIONS
+-- EVAL
 
 
 run :: App a -> Env -> IO (Either Error a)
 run app env =
   runExceptT (runReaderT (unHayoo app) env)
+
+
+observe :: App a -> App (Either Error a)
+observe app = do
+  env <- ask
+  liftIO (run app env)
+
+
+
+-- OPERATIONS
 
 
 search :: T.Text -> Int -> App (HC.LimitedResult SearchResult)

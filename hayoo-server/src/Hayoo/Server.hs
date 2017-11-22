@@ -14,12 +14,13 @@ module Hayoo.Server
 import           Control.Monad.Except
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Text                  as T
+import qualified Data.Text.Lazy             as LT
 import           Hayoo.API
 import qualified Hayoo.App                  as Hayoo
+import qualified Hayoo.App.Page             as Page
+import           Hayoo.App.Types
 import           Hayoo.Internal.Helpers     ((|>))
 import qualified Hayoo.Server.Configuration as Hayoo
-import qualified Hayoo.Server.Templates     as Templates
-import           Hayoo.Types
 import qualified Hunt.Client                as HC
 import           Hunt.ClientInterface       (LimitedResult)
 import           Network.Wai                (Application)
@@ -108,12 +109,20 @@ htmlAPI = about
   where
     about :: Hayoo.App H.Html
     about =
-      pure (Templates.body "" Templates.about)
+      pure Page.about
 
     examples :: Hayoo.App H.Html
     examples =
-      pure (Templates.body "" Templates.examples)
+      pure Page.examples
 
     index :: Maybe T.Text -> Hayoo.App H.Html
-    index query =
-      pure (Templates.body "" Templates.index)
+    index maybeQuery =
+      case maybeQuery of
+        Nothing ->
+          pure $
+            Page.index Nothing Nothing
+
+        Just query -> do
+          result <- Hayoo.observe (Hayoo.search query 0)
+          pure $
+            Page.index (Just (LT.fromStrict query)) (Just result)

@@ -18,7 +18,7 @@ module Hayoo.API
 
 
 import qualified Data.Text            as T
-import           Hayoo.Types          (SearchResult)
+import           Hayoo.App.Types      (SearchResult)
 import           Hunt.ClientInterface (LimitedResult)
 import           Servant
 import           Servant.HTML.Blaze

@@ -1,11 +1,10 @@
 {-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.Types
+module Hayoo.App.Types
   ( -- * Types
     ResultType (..)
   , PackageVersionResult (..)
   , SearchResult (..)
-  , HayooException (..)
 
     -- * Operations
   , contextQueryToQuery
@@ -26,16 +25,7 @@ import qualified Text.Read            as TR
 
 
 
--- TYPES
-
-
-data HayooException
-  = ParseError
-  | HuntClientException
-  | HttpException
-  | StringException
-  | FileNotFound
-  deriving (Show)
+-- SEARCH RESULT
 
 
 data ResultType
@@ -49,10 +39,6 @@ data ResultType
   | Type
   | Unknown
   deriving (Eq, Show, Generic)
-
-
-newtype PackageVersionResult
-  = PackageVersionResult T.Text
 
 
 data SearchResult
@@ -81,6 +67,11 @@ data SearchResult
   deriving (Show, Eq, Generic)
 
 
+newtype PackageVersionResult
+  = PackageVersionResult T.Text
+
+
+
 data ContextQuery
     = QueryReverseDependencies
     | QueryPackageModules
@@ -92,7 +83,9 @@ data ContextQuery
     deriving (Show)
 
 
+
 -- INSTANCES
+
 
 instance FromJSON ResultType where
     parseJSON = genericParseJSON lowercaseConstructorsOptions
