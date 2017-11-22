@@ -75,7 +75,7 @@ index maybeQuery result = page maybeQuery $
 
 about :: Html
 about =
-  page Nothing $ $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
+  page Nothing $(Hamlet.hamletFile "about.html") -- use "make build" instead of "cabal build"!
 
 
 
@@ -84,7 +84,7 @@ about =
 
 examples :: Html
 examples =
-  page Nothing $ $(Hamlet.hamletFile "examples.html") -- use "make build" instead of "cabal build"!
+  page Nothing $(Hamlet.hamletFile "examples.html") -- use "make build" instead of "cabal build"!
 
 
 
