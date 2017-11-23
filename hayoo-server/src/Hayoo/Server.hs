@@ -27,7 +27,6 @@ import           Network.Wai                (Application)
 import           Network.Wai.Handler.Warp   (run)
 import           Servant
 import           Servant.Client             (BaseUrl)
-import qualified Servant.JS                 as Servant
 import           Servant.Server
 import           Servant.Utils.StaticFiles  (serveDirectoryFileServer)
 import           System.FilePath            ((</>))
@@ -47,9 +46,7 @@ runServer config = do
   EKG.registerGcMetrics store
   env <- Hayoo.Env <$> HC.withBaseUrl (Hayoo.baseUrl (Hayoo.hunt config)) <*> Hayoo.newMetrics store
   let port = Hayoo.port (Hayoo.server config)
-      publicDir = Hayoo.publicDir (Hayoo.server config)
       server' = server store (Hayoo.publicDir (Hayoo.server config)) env
-  Servant.writeJSForAPI restAPI Servant.vanillaJS (publicDir </> "data" </> "api.js")
   putStrLn $ "Starting hayoo server on port " ++ show port
   run port $ serve hayooAPI server'
 
@@ -95,10 +92,15 @@ searchAPI = measuredSearch'
 
 
 completionAPI :: ServerT AutocompleteAPI Hayoo.App
-completionAPI query =
-  query
-    |> Hayoo.autocomplete
-    |> Hayoo.measure Hayoo._completions
+completionAPI maybeQuery =
+  case maybeQuery of
+    Nothing ->
+      pure []
+
+    Just query ->
+      query
+        |> Hayoo.autocomplete
+        |> Hayoo.measure Hayoo._completions
 
 
 metricsAPI :: Store -> ServerT MetricsAPI Hayoo.App

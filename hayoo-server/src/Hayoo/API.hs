@@ -73,7 +73,7 @@ type SearchAPI =
 
 type AutocompleteAPI =
         "autocomplete"
-        :> Capture "query" T.Text
+        :> QueryParam "query" T.Text
         :> Get '[JSON] [T.Text]
 
 
