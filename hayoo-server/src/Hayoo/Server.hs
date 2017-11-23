@@ -120,7 +120,7 @@ htmlServerT = ajax
             Page.index Nothing Nothing
 
         Just query -> do
-          result <- Hayoo.observe (Hayoo.search query page)
+          result <- Hayoo.observe (Hayoo.measure Hayoo._searches (Hayoo.search query page))
           pure $ Page.viewSearchResults result
 
 
@@ -140,6 +140,6 @@ htmlServerT = ajax
             Page.index Nothing Nothing
 
         Just query -> do
-          result <- Hayoo.observe (Hayoo.search query 0)
+          result <- Hayoo.observe (Hayoo.measure Hayoo._searches (Hayoo.search query 0))
           pure $
             Page.index (Just (LT.fromStrict query)) (Just result)
