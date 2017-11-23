@@ -34,7 +34,6 @@ function makeMores (target) {
     var textContent = $(this).text();
     
     if(textContent.length > maxChar) {
-      console.log('Test');
       var c = textContent.substr(0, showChar);
       var html = [
         '<div class="preview">',
