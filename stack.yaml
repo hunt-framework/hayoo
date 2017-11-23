@@ -13,6 +13,7 @@ extra-deps:
   - servant-0.12
   - servant-server-0.12
   - servant-client-0.12
+  - servant-foreign-0.10.2
   - servant-client-core-0.12
   - store-0.3
   - store-core-0.3

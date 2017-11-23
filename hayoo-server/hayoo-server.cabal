@@ -33,6 +33,7 @@ executable hayoo-server
                      , aeson
                      , ekg-core
                      , ekg-json 
+                     , filepath
                      , hayooLib
                      , htoml
                      , hunt-client
@@ -43,6 +44,7 @@ executable hayoo-server
                      , servant-blaze
                      , servant-server
                      , servant-client
+                     , servant-js
                      , scientific
                      , shakespeare
                      , blaze-html

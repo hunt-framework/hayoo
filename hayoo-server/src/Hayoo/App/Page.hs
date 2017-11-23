@@ -6,6 +6,7 @@ module Hayoo.App.Page
   ( index
   , about
   , examples
+  , viewSearchResults
   ) where
 
 
@@ -62,8 +63,8 @@ index maybeQuery result = page maybeQuery $
       Hayoo!
 |]
 
-    Just (Left error) ->
-      viewError error
+    Just (Left err) ->
+      viewError err
 
     Just (Right result) ->
       viewLimitedResult result
@@ -192,6 +193,7 @@ header query = [Hamlet.hamlet|
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
 
     <link href="/static/data/hayoo.css" rel="stylesheet">
+    <script src="/static/data/api.js">
     <script src="/static/data/hayoo.js">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -240,6 +242,17 @@ footer = [Hamlet.hamlet|
 -- SEARCH RESULTS
 
 
+viewSearchResults :: Either Hayoo.Error (H.LimitedResult SearchResult) -> Html
+viewSearchResults result =
+  case result of
+    Left err ->
+      viewError err routesToUrl
+
+    Right searchResults ->
+      viewLimitedResult searchResults routesToUrl
+
+
+
 viewLimitedResult :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
 viewLimitedResult result = [Hamlet.hamlet|
 <div #results>
@@ -249,6 +262,8 @@ viewLimitedResult result = [Hamlet.hamlet|
     $else
       $forall r <- H.lrResult result
         ^{viewSearchResult r}
+
+^{viewPagination result}
 |]
 
 
@@ -319,6 +334,16 @@ viewSearchResultHeader result =
 |]
 
 
+viewPagination :: H.LimitedResult SearchResult -> Hamlet.HtmlUrl Routes
+viewPagination results = [Hamlet.hamlet|
+$if ((H.lrCount results > 0) && (((H.lrMax results) * (1 + H.lrOffset results)) < (H.lrCount results)))
+  <div .align-right>
+    <button type="button" id="next-page-button" data-loading-text="Loading..." .btn .btn-primary>
+        More...
+$else
+
+|]
+
 
 -- ERRORS
 
@@ -345,6 +370,9 @@ viewError hayooError =
       take a look at the <a href=@{Examples}>examples</a> or what Hayoo! is
       all <a href=@{About}>about</a>.
 |]
+
+
+
 
 
 

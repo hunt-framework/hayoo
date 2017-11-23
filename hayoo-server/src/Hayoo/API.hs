@@ -14,6 +14,7 @@ module Hayoo.API
     -- * Proxy
   , hayooAPI
   , restAPI
+  , htmlAPI
   ) where
 
 
@@ -40,18 +41,23 @@ restAPI =
   Proxy
 
 
+htmlAPI :: Proxy HtmlAPI
+htmlAPI =
+  Proxy
+
+
 
 -- API
 
 
 type HayooAPI = RestAPI
+           :<|> HtmlAPI
            :<|> "static" :> Raw
 
 
 type RestAPI = SearchAPI
           :<|> AutocompleteAPI
           :<|> MetricsAPI
-          :<|> HtmlAPI
 
 
 type SearchAPI =
@@ -77,7 +83,11 @@ type MetricsAPI =
 
 
 type HtmlAPI =
-      "about"
+      "ajax"
+      :> Capture "page" Int
+      :> QueryParam "query" T.Text
+      :> Get '[HTML] Html
+ :<|> "about"
       :> Get '[HTML] Html
  :<|> "examples"
       :> Get '[HTML] Html

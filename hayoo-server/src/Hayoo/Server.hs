@@ -27,8 +27,10 @@ import           Network.Wai                (Application)
 import           Network.Wai.Handler.Warp   (run)
 import           Servant
 import           Servant.Client             (BaseUrl)
+import qualified Servant.JS                 as Servant
 import           Servant.Server
 import           Servant.Utils.StaticFiles  (serveDirectoryFileServer)
+import           System.FilePath            ((</>))
 import           System.Metrics             (Store)
 import qualified System.Metrics             as EKG
 import           System.Metrics.Json        (Sample (Sample))
@@ -45,13 +47,16 @@ runServer config = do
   EKG.registerGcMetrics store
   env <- Hayoo.Env <$> HC.withBaseUrl (Hayoo.baseUrl (Hayoo.hunt config)) <*> Hayoo.newMetrics store
   let port = Hayoo.port (Hayoo.server config)
+      publicDir = Hayoo.publicDir (Hayoo.server config)
       server' = server store (Hayoo.publicDir (Hayoo.server config)) env
+  Servant.writeJSForAPI restAPI Servant.vanillaJS (publicDir </> "data" </> "api.js")
   putStrLn $ "Starting hayoo server on port " ++ show port
   run port $ serve hayooAPI server'
 
 
 server :: Store -> FilePath -> Hayoo.Env -> Server HayooAPI
 server store path env = hoistServer restAPI hayooAppToHandler (serverT store)
+                   :<|> hoistServer htmlAPI hayooAppToHandler htmlServerT
                    :<|> serveDirectoryFileServer path
   where
     hayooAppToHandler :: Hayoo.App a -> Handler a
@@ -67,7 +72,6 @@ serverT :: Store -> ServerT RestAPI Hayoo.App
 serverT store = searchAPI
            :<|> completionAPI
            :<|> metricsAPI store
-           :<|> htmlAPI
 
 
 
@@ -102,11 +106,24 @@ metricsAPI store = Hayoo.metrics store
               :<|> Hayoo.metrics store
 
 
-htmlAPI :: ServerT HtmlAPI Hayoo.App
-htmlAPI = about
-     :<|> examples
-     :<|> index
+htmlServerT :: ServerT HtmlAPI Hayoo.App
+htmlServerT = ajax
+         :<|> about
+         :<|> examples
+         :<|> index
   where
+    ajax :: Int -> Maybe T.Text -> Hayoo.App H.Html
+    ajax page maybeQuery =
+      case maybeQuery of
+        Nothing ->
+          pure $
+            Page.index Nothing Nothing
+
+        Just query -> do
+          result <- Hayoo.observe (Hayoo.search query page)
+          pure $ Page.viewSearchResults result
+
+
     about :: Hayoo.App H.Html
     about =
       pure Page.about
