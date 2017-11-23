@@ -1,4 +1,5 @@
 /hayooFrontend/cabal.sandbox.config
+api.js
 dist
 .stack-work
 dist-stack
