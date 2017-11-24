@@ -42,13 +42,15 @@ function makeMores (target) {
     });
 
     $(t).find(".morelink").click(function(){
-        $(this).parent().hide()
-        $(this).parent().next().show()
+        var $descr = $(this).closest(".description");
+        $descr.find(".preview").hide();
+        $descr.find(".content").show();
         return false;
     });
     $(t).find(".lesslink").click(function(){
-        $(this).parent().hide()
-        $(this).parent().prev().show()
+        var $descr = $(this).closest(".description");
+        $descr.find(".content").hide();
+        $descr.find(".preview").show();
         return false;
     });
 }
