@@ -6,10 +6,15 @@ module Hayoo.Core.Signature
   ) where
 
 
-import           Data.Semigroup  ((<>))
-import qualified Data.Text       as T
-import           Prelude         hiding (print)
-import qualified Text.Megaparsec as M
+import           Control.Applicative                   ((<|>))
+import qualified Control.Applicative                   as A
+import qualified Data.Char.Properties.UnicodeCharProps as Char
+import           Data.Semigroup                        ((<>))
+import qualified Data.Text                             as T
+import           Data.Void
+import           Prelude                               hiding (print)
+import qualified Text.Megaparsec                       as M
+import qualified Text.Megaparsec.Char                  as M
 
 
 
@@ -70,25 +75,25 @@ print signature =
       "[" <> print type_ <> "]"
 
     InfixTypeApp symbol a b ->
-      parenthesize a <> print symbol <> parenthesize b
+      parenthesize a <> " " <> print symbol <> " " <> parenthesize b
 
     TypeApp types ->
       T.intercalate " " (map parenthesize types)
 
     Tuple elements ->
-      "(" <> T.intercalate ", " (map undefined elements) <> ")"
+      "(" <> T.intercalate ", " (map parenthesize elements) <> ")"
 
     Function parameter result ->
-      parenthesize parameter <> "->" <> print result
+      parenthesize parameter <> " -> " <> print result
 
-    Context context type_ ->
-      parenthesize context <> "=>" <> print type_
+    Context ctx type_ ->
+      parenthesize ctx <> " => " <> print type_
 
     Equiv left right ->
-      print left <> "~" <> print right
+      print left <> " ~ " <> print right
 
     ExType locals type_ ->
-      "forall " <> (T.intercalate " " (fmap print locals)) <> "." <> print type_
+      "forall " <> (T.intercalate " " (fmap print locals)) <> ". " <> print type_
 
 
 parenthesize :: Signature -> T.Text
@@ -118,28 +123,204 @@ parenthesize signature =
 
 
 type Parser
-  = M.Parsec T.Text ()
+  = M.Parsec Void T.Text
 
 
-parse :: T.Text -> Either (M.ParseError Char ()) Signature
+parse :: T.Text -> Either (M.ParseError Char Void) Signature
 parse =
-  undefined
+  M.parse (expr <* M.eof) "<signature>"
 
 
-fullSignature :: Parser Signature
-fullSignature =
-  undefined
+parseTest :: T.Text -> IO ()
+parseTest =
+  M.parseTest' (expr <* M.eof)
+
+
+expr :: Parser Signature
+expr = do
+  M.try function
+    <|> M.try context
+    <|> M.try equiv
+    <|> M.try typeInfix
+
+
+equiv :: Parser Signature
+equiv =
+  Equiv <$> typeInfix
+        <*> (M.char '~' *> M.space *> expr)
+
+
+context :: Parser Signature
+context =
+  Context <$> typeInfix
+          <*> (ctxOp *> M.space *> expr)
+
+
+function :: Parser Signature
+function =
+  Function <$> typeInfix
+           <*> (fnOp *> M.space *> expr)
+
+
+typeInfix :: Parser Signature
+typeInfix =
+  let
+    typeOp t =
+      InfixTypeApp <$> infixSym
+                   <*> pure t
+                   <*> typeInfix
+  in do
+    result <- typeApp
+    typeOp result <|> pure result
+
+
+typeApp :: Parser Signature
+typeApp = do
+  ts <- A.some primitive
+  case ts of
+    [t] ->
+      pure t
+
+    _ ->
+      pure (TypeApp ts)
+
+
+primitive :: Parser Signature
+primitive =
+  let
+    varSym' = do
+      sym <- varSym
+      case sym of
+        VarSym "forall" ->
+          existential
+
+        _ ->
+          pure sym
+  in
+    typeSym <|> varSym' <|> tuple <|> list
+
+
+tuple :: Parser Signature
+tuple = do
+  result <- between '(' (M.sepBy expr (M.char ',' *> M.space)) ')'
+  case result of
+    [] ->
+      pure (TypeSym "()")
+
+    [e] ->
+      pure e
+
+    _ ->
+      pure (Tuple result)
+
+
+list :: Parser Signature
+list =
+  ListType <$> between '[' expr ']'
+
+
+existential :: Parser Signature
+existential =
+  ExType <$> A.some varSym
+         <*> (M.char '.' *> M.space *> expr)
+
+
+
+-- PRIMITIVE PARSERS
 
 
 varSym :: Parser Signature
 varSym =
-  undefined
+  VarSym <$> varIdent <* M.space
+
+
+typeSym :: Parser Signature
+typeSym =
+  TypeSym <$> typeIdent <* M.space
+
+
+infixOpSym :: Parser Signature
+infixOpSym =
+  TypeSym <$> infixOp <* M.space
+
+
+infixIdentSym :: Parser Signature
+infixIdentSym =
+  let
+    sym =
+      TypeSym <$> typeIdent <|> VarSym <$> varIdent
+  in
+    M.char '`' *> sym <* M.char '`' <* M.space
+
+
+infixSym :: Parser Signature
+infixSym =
+  infixOpSym <|> infixIdentSym
+
+
+between :: Char -> Parser a -> Char -> Parser a
+between left p right =
+  M.char left *> M.space *> p <* M.char right <* M.space
+
+
+fnOp :: Parser T.Text
+fnOp =
+  M.string "->" <|> M.string "\8594"
+
+
+ctxOp :: Parser T.Text
+ctxOp =
+  M.string "=>" <|> M.string "\8658"
 
 
 
--- IDENTIFIER PREDICATES
+-- IDENTIFIER PARSERS
 
 
-isIdentifier :: Char -> Bool
-isIdentifier c =
-  undefined
+varIdent :: Parser T.Text
+varIdent =
+  T.cons <$> M.satisfy (\c -> Char.isUnicodeLl c || c == '_') -- Must start with a lowercase letter
+         <*> M.takeWhileP (Just "identifier") isIdentChar
+
+
+typeIdent :: Parser T.Text
+typeIdent =
+  T.cons <$> M.satisfy (\c -> Char.isUnicodeLu c || Char.isUnicodeLt c)
+         <*> M.takeWhileP (Just "type identifier") isQualifiedIdentChar
+
+
+infixOp :: Parser T.Text
+infixOp =
+  T.cons <$> M.char ':'
+         <*> M.takeWhileP (Just "infix type operator") isSymbolChar
+
+
+
+-- IDENTIFIER AND SYMBOL PREDICATES
+
+
+isSymbolChar :: Char -> Bool
+isSymbolChar c =
+  (c < '\128' && c `elem` ("!#$%&*+./<=>?@\\^|-~:" :: String))
+    || (c >= '\128' && (Char.isUnicodeS c || Char.isUnicodeP c))
+
+
+isQualifiedIdentChar :: Char -> Bool
+isQualifiedIdentChar c =
+  isIdentChar c
+    || c == '.' -- for qualified names
+
+
+isIdentChar :: Char -> Bool
+isIdentChar c =
+  isLetter c
+    || c == '_'
+    || c == '\''
+
+
+isLetter :: Char -> Bool
+isLetter c =
+  Char.isUnicodeLl c       -- lowercase letter
+    || Char.isUnicodeLu c  -- uppercase letter
+    || Char.isUnicodeLt c  -- titlecase letter
+    || Char.isUnicodeN c   -- digit
