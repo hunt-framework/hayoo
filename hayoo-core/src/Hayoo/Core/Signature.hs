@@ -131,11 +131,6 @@ parse =
   M.parse (expr <* M.eof) "<signature>"
 
 
-parseTest :: T.Text -> IO ()
-parseTest =
-  M.parseTest' (expr <* M.eof)
-
-
 expr :: Parser Signature
 expr = do
   M.try function
