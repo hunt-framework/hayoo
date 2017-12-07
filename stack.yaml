@@ -6,6 +6,7 @@ packages:
   #- ./newHayooIndexer
   - ./hayoo-cli
   - ./hayoo-core
+  - ./hayoo-indexer
   - ../hunt/hunt-api
   - ../hunt/hunt-client
   - ../hunt/hunt-crawler
