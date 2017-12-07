@@ -27,11 +27,14 @@ data DeclInfo
       , sourceURI  :: T.Text
       -- ^ An optional URI to the online source of the function.
 
-      , declDescr  :: T.Text
+      , declDescr  :: Maybe T.Text
       -- ^ The haddock description of a type or function, maybe shortened for space efficiency
 
       , declType   :: !DeclType
       -- ^ The type of the documented part, function, class, type, ...
+
+      , docURI     :: T.Text
+      -- ^ A URI associated with document (i.e. link to the function's documentation)
       } deriving (Show, Eq)
 
 
