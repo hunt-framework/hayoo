@@ -22,7 +22,6 @@ import qualified Data.Maybe           as Maybe
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Void            as Void
-import           Debug.Trace
 import           Hayoo.Core.DeclInfo  (DeclInfo (..))
 import qualified Hayoo.Core.DeclInfo  as DeclInfo
 import qualified Text.Megaparsec      as M
