@@ -18,6 +18,7 @@ extra-deps:
   - servant-client-0.12
   - servant-client-core-0.12
   - megaparsec-6.2.0
+  - hspec-megaparsec-1.0.0
   - store-0.3
   - store-core-0.3
   - data-r-tree-0.0.5.0
