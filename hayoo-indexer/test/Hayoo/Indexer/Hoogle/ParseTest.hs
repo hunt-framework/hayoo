@@ -12,6 +12,7 @@ import           Test.Hspec                 (Spec, describe, it)
 import           Test.Hspec.Megaparsec      (shouldFailOn, shouldParse,
                                              shouldSucceedOn)
 import qualified Text.Megaparsec            as M
+import qualified Text.Megaparsec.Char       as M
 
 
 
@@ -28,6 +29,15 @@ suite = do
     it "should parse preamble with comment" $ do
       M.parse Hoogle.preamble "" (testPreamble (Just "-- | xx"))
         `shouldParse` Hoogle.Package (Just "xx") "servant" "0.12"
+
+  describe "dataInfo" $ do
+    it "should parse a simple data declaration" $ do
+      M.parse (Hoogle.dataInfo (aesonDeclInfo Nothing)) "" simpleData
+        `shouldParse` simpleDataResult
+
+    it "should parse multiple simple data declarations" $ do
+      M.parse (M.manyTill (M.space >> Hoogle.dataInfo (aesonDeclInfo Nothing)) M.eof) "" simpleData2
+        `shouldParse` [simpleDataResult, simpleDataResult]
 
   describe "moduleInfo" $ do
     it "should parse moduleInfo from aeson" $ do
@@ -88,3 +98,34 @@ testAesonModuleWithComment =
   , "--   encoded as UTF-8."
   , "module Data.Aeson.Parser.Internal"
   ]
+
+
+simpleData :: T.Text
+simpleData =
+  T.intercalate "\n"
+  [ "-- | A type-level indicator that <tt>ToJSON1</tt> or <tt>FromJSON1</tt> is"
+  , "--   being derived generically."
+  , "data One"
+  ]
+
+
+simpleData2 :: T.Text
+simpleData2 =
+  T.intercalate "\n"
+  [ simpleData
+  , ""
+  , simpleData
+  ]
+
+
+simpleDataResult :: DeclInfo.DeclInfo
+simpleDataResult =
+  DeclInfo.DeclInfo
+    { DeclInfo.moduleName = "Data.Aeson.Parser.Internal"
+    , DeclInfo.signature  = ""                          -- No signature for a module
+    , DeclInfo.package    = "aeson"
+    , DeclInfo.sourceURI  = ""
+    , DeclInfo.declDescr  = Just "A type-level indicator that <tt>ToJSON1</tt> or <tt>FromJSON1</tt> is\nbeing derived generically."
+    , DeclInfo.declType   = DeclInfo.Data
+    , DeclInfo.docURI     = "http://hackage.haskell.org/package/aeson/docs/Data-Aeson-Parser-Internal.html#t:One"
+    }

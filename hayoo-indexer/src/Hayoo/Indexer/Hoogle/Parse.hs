@@ -18,9 +18,11 @@ module Hayoo.Indexer.Hoogle.Parse
 
 import           Control.Applicative  ((<|>))
 import qualified Control.Applicative  as A
+import qualified Data.Maybe           as Maybe
 import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Void            as Void
+import           Debug.Trace
 import           Hayoo.Core.DeclInfo  (DeclInfo (..))
 import qualified Hayoo.Core.DeclInfo  as DeclInfo
 import qualified Text.Megaparsec      as M
@@ -97,24 +99,26 @@ isEndOfLine c =
 hoogle :: Parser (Package, [DeclInfo])
 hoogle = do
   pkg        <- preamble
-  allModules <- M.many (modules pkg)
+  allModules <- A.many (M.space >> modules pkg)
   pure (pkg, mconcat allModules)
 
 
 modules :: Package -> Parser [DeclInfo]
 modules pkg = do
   modInfo   <- moduleInfo pkg
-  declInfos <- M.manyTill (declInfo modInfo) (M.try (moduleInfo pkg))
-  pure (modInfo:declInfos)
+  let lookAheadModule = M.lookAhead (M.try (M.space >> moduleInfo pkg >> pure ()) <|> M.eof)
+  declInfos <- M.manyTill (M.space >> declInfo modInfo) lookAheadModule
+  pure (modInfo:Maybe.catMaybes declInfos)
 
 
-declInfo :: ModuleInfo -> Parser DeclInfo
+declInfo :: ModuleInfo -> Parser (Maybe DeclInfo)
 declInfo modInfo =
-  M.try (typeInfo modInfo)
-    <|> M.try (dataInfo modInfo)
-    <|> M.try (newtypeInfo modInfo)
-    <|> M.try (functionInfo modInfo)
-    -- Should ignore the line here, if unknown, but throw on module
+  M.try (Just <$> typeInfo modInfo)
+    <|> M.try (Just <$> dataInfo modInfo)
+    <|> M.try (Just <$> newtypeInfo modInfo)
+    <|> M.try (classInfo modInfo >> pure Nothing)
+    <|> M.try (instanceInfo modInfo >> pure Nothing)
+    <|> M.try (Just <$> functionInfo modInfo)
 
 
 preamble :: Parser Package
@@ -148,7 +152,7 @@ moduleInfo pkg = do
 functionInfo :: ModuleInfo -> Parser DeclInfo
 functionInfo modInfo = do
   comment <- A.optional (M.try docComment)
-  fnName  <- ident
+  fnName  <- ident <* M.space <* M.string ":: "
   sig     <- M.space >> line
   pure $
     DeclInfo
@@ -202,19 +206,30 @@ newtypeInfo modInfo = do
 dataInfo :: ModuleInfo -> Parser DeclInfo
 dataInfo modInfo = do
   comment <- A.optional (M.try docComment)
-  _ <- M.string "data"
-  undefined
+  _       <- M.string "data "
+  dName   <- ident
+  _sig    <- line
+  pure $
+    DeclInfo
+      { moduleName = moduleName modInfo
+      , signature  = ""
+      , package    = package modInfo
+      , sourceURI  = ""
+      , declDescr  = comment
+      , declType   = DeclInfo.Data
+      , docURI     = typeUri modInfo dName
+      }
 
 
 instanceInfo :: ModuleInfo -> Parser ()
-instanceInfo modInfo = do
+instanceInfo _modInfo = do
   _ <- A.optional (M.try docComment)
   _ <- M.string "instance "
   line >> pure ()
 
 
 classInfo :: ModuleInfo -> Parser ()
-classInfo modInfo = do
+classInfo _modInfo = do
   _ <- A.optional (M.try docComment)
   _ <- M.string "class "
   line >> pure ()
@@ -227,13 +242,8 @@ classInfo modInfo = do
 docComment :: Parser T.Text
 docComment = do
   firstLine <- M.string "-- | " >> line
-  result    <- M.many (M.try (M.string "--   " >> line))
+  result    <- M.many (M.try (M.space >> M.string "--" >> (fmap T.stripStart line)))
   pure (T.intercalate "\n" (firstLine:result))
-
-
-lineComment :: Parser T.Text
-lineComment = do
-  M.string "-- " >> line
 
 
 
@@ -242,7 +252,7 @@ lineComment = do
 
 ident :: Parser T.Text
 ident =
-  M.takeWhileP (Just "identifier") (\c -> c == ' ' || isEndOfLine c)
+  M.takeWhileP (Just "identifier") (\c -> c /= ' ' && not (isEndOfLine c))
 
 
 line :: Parser T.Text
