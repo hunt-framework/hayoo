@@ -6,6 +6,7 @@ module Hayoo.Indexer.Hoogle.ParseTest
 
 import           Data.Monoid                ((<>))
 import qualified Data.Text                  as T
+import qualified Hayoo.Core.DeclInfo        as DeclInfo
 import qualified Hayoo.Indexer.Hoogle.Parse as Hoogle
 import           Test.Hspec                 (Spec, describe, it)
 import           Test.Hspec.Megaparsec      (shouldFailOn, shouldParse,
@@ -18,7 +19,7 @@ import qualified Text.Megaparsec            as M
 
 
 suite :: Spec
-suite =
+suite = do
   describe "preamble" $ do
     it "should parse preamble without comment" $ do
       M.parse Hoogle.preamble "" (testPreamble Nothing)
@@ -27,6 +28,15 @@ suite =
     it "should parse preamble with comment" $ do
       M.parse Hoogle.preamble "" (testPreamble (Just "-- | xx"))
         `shouldParse` Hoogle.Package (Just "xx") "servant" "0.12"
+
+  describe "moduleInfo" $ do
+    it "should parse moduleInfo from aeson" $ do
+      M.parse (Hoogle.moduleInfo aesonPackage) "" testAesonModule
+        `shouldParse` aesonDeclInfo Nothing
+
+    it "should parse moduleInfo from aeson with comment" $ do
+      M.parse (Hoogle.moduleInfo aesonPackage) "" testAesonModuleWithComment
+        `shouldParse` aesonDeclInfo (Just "Efficiently and correctly parse a JSON string. The string must be\nencoded as UTF-8.")
 
 
 
@@ -47,4 +57,34 @@ testPreamble comment =
         "\n" <> c
   , "@package servant"
   , "@version 0.12"
+  ]
+
+
+
+-- AESON TEST
+
+
+aesonDeclInfo :: Maybe T.Text -> DeclInfo.DeclInfo
+aesonDeclInfo comment =
+  DeclInfo.DeclInfo "Data.Aeson.Parser.Internal" "" "aeson" "" comment DeclInfo.Module "http://hackage.haskell.org/package/aeson/docs/Data-Aeson-Parser-Internal.html"
+
+
+aesonPackage :: Hoogle.Package
+aesonPackage =
+  Hoogle.Package Nothing "aeson" "1.2.3.0"
+
+
+testAesonModule :: T.Text
+testAesonModule =
+  T.intercalate "\n"
+  [ "module Data.Aeson.Parser.Internal"
+  ]
+
+
+testAesonModuleWithComment :: T.Text
+testAesonModuleWithComment =
+  T.intercalate "\n"
+  [ "-- | Efficiently and correctly parse a JSON string. The string must be"
+  , "--   encoded as UTF-8."
+  , "module Data.Aeson.Parser.Internal"
   ]
