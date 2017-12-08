@@ -129,7 +129,7 @@ preamble = do
   pure (Package comment packageName version)
 
 
-moduleInfo :: Package -> Parser DeclInfo.DeclInfo
+moduleInfo :: Package -> Parser DeclInfo
 moduleInfo pkg = do
   comment <- A.optional (M.try docComment)
   modName <- M.string "module " >> line
