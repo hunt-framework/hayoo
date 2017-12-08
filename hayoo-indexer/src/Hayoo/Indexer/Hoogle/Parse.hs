@@ -73,12 +73,12 @@ moduleUri pkg modName =
 
 functionUri :: ModuleInfo -> T.Text -> T.Text
 functionUri modInfo name =
-  (docURI modInfo) <> "#v:" <> name
+  docURI modInfo <> "#v:" <> name
 
 
 typeUri :: ModuleInfo -> T.Text -> T.Text
 typeUri modInfo name =
-  (docURI modInfo) <> "#t:" <> name
+  docURI modInfo <> "#t:" <> name
 
 
 
