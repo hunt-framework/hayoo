@@ -25,4 +25,5 @@ extra-deps:
   - data-stringmap-1.0.1.1
   - hxt-xpath-9.1.2.2
   - hxt-cache-9.1.0.1
+  - Cabal-2.0.0.2
 resolver: lts-9.17

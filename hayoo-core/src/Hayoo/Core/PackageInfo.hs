@@ -20,7 +20,7 @@ data PackageInfo
     = PackageInfo
       { pkgName         :: T.Text   -- ^ The name of the package
       , pkgVersion      :: T.Text   -- ^ The latest package version
-      , pkgDependencies :: T.Text   -- ^ The list of required packages
+      , pkgDependencies :: [T.Text] -- ^ The list of required packages
       , pkgAuthor       :: T.Text   -- ^ The author
       , pkgMaintainer   :: T.Text   -- ^ The maintainer
       , pkgCategory     :: T.Text   -- ^ The package category
