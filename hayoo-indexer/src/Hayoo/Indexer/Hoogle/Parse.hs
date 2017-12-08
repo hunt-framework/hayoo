@@ -117,6 +117,7 @@ declInfo modInfo =
     <|> M.try (Just <$> newtypeInfo modInfo)
     <|> M.try (classInfo modInfo >> pure Nothing)
     <|> M.try (instanceInfo modInfo >> pure Nothing)
+    <|> M.try (infixInfo modInfo >> pure Nothing)
     <|> M.try (Just <$> functionInfo modInfo)
 
 
@@ -232,6 +233,11 @@ classInfo _modInfo = do
   _ <- A.optional (M.try docComment)
   _ <- M.string "class "
   line >> pure ()
+
+
+infixInfo :: ModuleInfo -> Parser ()
+infixInfo _modInfo = do
+  (M.string "infixr" <|> M.string "infixl" <|> M.string "infix") >> line >> pure ()
 
 
 
