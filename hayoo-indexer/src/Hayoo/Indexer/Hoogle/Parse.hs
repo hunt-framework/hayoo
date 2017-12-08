@@ -118,6 +118,8 @@ declInfo modInfo =
     <|> M.try (classInfo modInfo >> pure Nothing)
     <|> M.try (instanceInfo modInfo >> pure Nothing)
     <|> M.try (infixInfo modInfo >> pure Nothing)
+    <|> M.try (typeFamilyInfo modInfo >> pure Nothing)
+    <|> M.try (ignoreBrace modInfo >> pure Nothing)
     <|> M.try (Just <$> functionInfo modInfo)
 
 
@@ -238,6 +240,18 @@ classInfo _modInfo = do
 infixInfo :: ModuleInfo -> Parser ()
 infixInfo _modInfo = do
   (M.string "infixr" <|> M.string "infixl" <|> M.string "infix") >> line >> pure ()
+
+
+typeFamilyInfo :: ModuleInfo -> Parser ()
+typeFamilyInfo _modInfo = do
+  _ <- M.space >> M.string "type family "
+  _ <- ident -- Not sure, whether we should do this
+  line >> pure ()
+
+
+ignoreBrace :: ModuleInfo -> Parser ()
+ignoreBrace _ =
+  M.space >> (M.char '{' <|> M.char '}') >> line >> pure ()
 
 
 
