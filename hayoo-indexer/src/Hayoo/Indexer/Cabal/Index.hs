@@ -10,6 +10,7 @@ import           Data.Semigroup         ((<>))
 import qualified Data.Text              as T
 import qualified Data.Time              as Time
 import qualified Hayoo.Core.PackageInfo as PackageInfo
+import qualified Hayoo.Indexer.Internal as I
 
 
 
@@ -57,7 +58,7 @@ insert now pkg =
 
     description =
       Json.object
-        [ "indexed"      .= fmt "%c" now
+        [ "indexed"      .= I.fmtTime "%c" now
         , "description"  .= PackageInfo.pkgDescription pkg
         , "author"       .= PackageInfo.pkgAuthor pkg
         , "category"     .= PackageInfo.pkgCategory pkg
@@ -71,7 +72,7 @@ insert now pkg =
     index =
       Json.object
         [ "type"         .= ("package" :: String)
-        , "indexed"      .= fmt "%FT%X" now
+        , "indexed"      .= I.fmtTime "%FT%X" now
         , "description"  .= PackageInfo.pkgDescription pkg
         , "author"       .= PackageInfo.pkgAuthor pkg
         , "category"     .= PackageInfo.pkgCategory pkg
@@ -137,7 +138,7 @@ delete infos =
       Json.object
         [ "type"     .= ("context" :: String)
         , "contexts" .= [ "type" :: String ]
-        , "query"    .= fullWord "package"
+        , "query"    .= I.fullWord "package"
         ]
 
     name =
@@ -146,7 +147,7 @@ delete infos =
         , "contexts" .= [ "name" :: String ]
         , "query"    .=
             Json.object
-              [ "args" .= map fullWord pkgNames
+              [ "args" .= map I.fullWord pkgNames
               , "op"   .= ("or" :: String)
               , "type" .= ("seq" :: String)
               ]
@@ -163,21 +164,3 @@ delete infos =
       [ "cmd"   .= ("delete-by-query" :: String)
       , "query" .= fullQuery
       ]
-
-
-
--- HELPERS
-
-
-fullWord :: T.Text -> Json.Value
-fullWord word =
-  Json.object
-    [ "op"   .= ("case" :: String)
-    , "type" .= ("fullword" :: String)
-    , "word" .= word
-    ]
-
-
-fmt :: String -> Time.UTCTime -> String
-fmt format =
-  Time.formatTime Time.defaultTimeLocale format

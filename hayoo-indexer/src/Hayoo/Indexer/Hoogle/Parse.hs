@@ -19,7 +19,6 @@ module Hayoo.Indexer.Hoogle.Parse
 import           Control.Applicative  ((<|>))
 import qualified Control.Applicative  as A
 import qualified Data.Maybe           as Maybe
-import           Data.Semigroup       ((<>))
 import qualified Data.Text            as T
 import qualified Data.Void            as Void
 import           Hayoo.Core.DeclInfo  (DeclInfo (..))
@@ -52,34 +51,6 @@ parse :: T.Text -> Either (M.ParseError Char Void.Void) (Package, [DeclInfo])
 parse =
   M.parse hoogle ""
 
-
-
--- URI HELPERS
-
-
-hackageUri :: T.Text
-hackageUri =
-  "http://hackage.haskell.org/package"
-
-
-packageUri :: Package -> T.Text
-packageUri pkg =
-  hackageUri </> (_name pkg)
-
-
-moduleUri :: Package -> T.Text -> T.Text
-moduleUri pkg modName =
-  packageUri pkg </> "docs" </> (T.replace "." "-" modName <> ".html")
-
-
-functionUri :: ModuleInfo -> T.Text -> T.Text
-functionUri modInfo name =
-  docURI modInfo <> "#v:" <> name
-
-
-typeUri :: ModuleInfo -> T.Text -> T.Text
-typeUri modInfo name =
-  docURI modInfo <> "#t:" <> name
 
 
 
@@ -141,13 +112,13 @@ moduleInfo pkg = do
   modName <- M.string "module " >> line
   pure $
     DeclInfo
-      { moduleName = modName
-      , signature  = ""                          -- No signature for a module
-      , package    = (_name pkg)
-      , sourceURI  = ""
-      , declDescr  = comment
-      , declType   = DeclInfo.Module
-      , docURI     = moduleUri pkg modName
+      { moduleName   = modName
+      , name         = modName
+      , signature    = Nothing                          -- No signature for a module
+      , package      = (_name pkg)
+      , sourceURI    = Nothing
+      , description  = comment
+      , declType     = DeclInfo.Module
       }
 
 
@@ -158,13 +129,13 @@ functionInfo modInfo = do
   sig     <- M.space >> line
   pure $
     DeclInfo
-      { moduleName = moduleName modInfo
-      , signature  = sig
-      , package    = package modInfo
-      , sourceURI  = ""
-      , declDescr  = comment
-      , declType   = DeclInfo.Function
-      , docURI     = functionUri modInfo fnName
+      { moduleName  = moduleName modInfo
+      , name        = fnName
+      , signature   = Just sig
+      , package     = package modInfo
+      , sourceURI   = Nothing
+      , description = comment
+      , declType    = DeclInfo.Function
       }
 
 
@@ -176,13 +147,13 @@ typeInfo modInfo = do
   sig      <- M.char '=' >> line
   pure $
     DeclInfo
-      { moduleName = moduleName modInfo
-      , signature  = sig
-      , package    = package modInfo
-      , sourceURI  = ""
-      , declDescr  = comment
-      , declType   = DeclInfo.Type
-      , docURI     = typeUri modInfo typeName
+      { moduleName   = moduleName modInfo
+      , name         = typeName
+      , signature    = Just sig
+      , package      = package modInfo
+      , sourceURI    = Nothing
+      , description  = comment
+      , declType     = DeclInfo.Type
       }
 
 
@@ -195,13 +166,13 @@ newtypeInfo modInfo = do
   _params     <- line
   pure $
     DeclInfo
-      { moduleName = moduleName modInfo
-      , signature  = ""
-      , package    = package modInfo
-      , sourceURI  = ""
-      , declDescr  = comment
-      , declType   = DeclInfo.Newtype
-      , docURI     = typeUri modInfo typeName
+      { moduleName   = moduleName modInfo
+      , name         = typeName
+      , signature    = Nothing
+      , package      = package modInfo
+      , sourceURI    = Nothing
+      , description  = comment
+      , declType     = DeclInfo.Newtype
       }
 
 
@@ -213,13 +184,13 @@ dataInfo modInfo = do
   _sig    <- line
   pure $
     DeclInfo
-      { moduleName = moduleName modInfo
-      , signature  = ""
-      , package    = package modInfo
-      , sourceURI  = ""
-      , declDescr  = comment
-      , declType   = DeclInfo.Data
-      , docURI     = typeUri modInfo dName
+      { moduleName   = moduleName modInfo
+      , name         = dName
+      , signature    = Nothing
+      , package      = package modInfo
+      , sourceURI    = Nothing
+      , description  = comment
+      , declType     = DeclInfo.Data
       }
 
 
@@ -278,12 +249,3 @@ line :: Parser T.Text
 line =
   M.takeWhileP (Just "line") (not . isEndOfLine)
     <* (M.try M.eol <|> M.try (M.eof >> pure "") <|> pure "")
-
-
-
--- HELPERS
-
-
-(</>) :: T.Text -> T.Text -> T.Text
-(</>) a b =
-  a <> "/" <> b

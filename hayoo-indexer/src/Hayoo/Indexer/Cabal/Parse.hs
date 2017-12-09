@@ -102,7 +102,6 @@ deps desc =
       |> map (T.pack . C.unPackageName . C.depPkgName)
 
 
-
 parseErrorPretty :: Cabal.PError -> T.Text
 parseErrorPretty err =
   case err of
