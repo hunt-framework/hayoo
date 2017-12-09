@@ -20,6 +20,7 @@ library
                      , Hayoo.Indexer.Hoogle.Index
                      , Hayoo.Indexer.Cabal.Parse
                      , Hayoo.Indexer.Cabal.Index
+                     , Hayoo.Indexer.Internal
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , Cabal
