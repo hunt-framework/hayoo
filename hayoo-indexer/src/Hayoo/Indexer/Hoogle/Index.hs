@@ -23,14 +23,13 @@ import qualified Hayoo.Indexer.Internal as I
 -- | Build a command for inserting a @DeclInfo@ into
 -- a Hunt index.
 --
--- Here is an example, of how that would look like with the
--- @PackageInfo@ extracted from the hayoo-indexer file
--- (with some simplifications).
+-- Here is an example of how that would look like for
+-- the `decode` function in the `Data.Aeson` package.
 --
 -- > {
 -- >   "cmd": "insert",
 -- >   "document": {
--- >     "uri": "http://hackage.haskell.org/package/hayoo-indexer",
+-- >     "uri": "http://hackage.haskell.org/package/aeson/docs/Data-Aeson.html#v:decode",
 -- >     "description": {
 -- >       "indexed": "Mon Jan 01 10:00:00 2017",
 -- >       "description": "An efficient ...",
