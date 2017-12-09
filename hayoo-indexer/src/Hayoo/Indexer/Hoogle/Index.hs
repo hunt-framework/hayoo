@@ -8,6 +8,7 @@ module Hayoo.Indexer.Hoogle.Index
 import           Data.Aeson             as Json
 import qualified Data.Char              as Char
 import qualified Data.Maybe             as Maybe
+import           Data.Semigroup         ((<>))
 import qualified Data.Text              as T
 import qualified Data.Time              as Time
 import qualified Hayoo.Core.DeclInfo    as DeclInfo
@@ -32,30 +33,30 @@ import qualified Hayoo.Indexer.Internal as I
 -- >     "uri": "http://hackage.haskell.org/package/hayoo-indexer",
 -- >     "description": {
 -- >       "indexed": "Mon Jan 01 10:00:00 2017",
--- >       "description": "An indexer, which turns hoogle and cabal files into hunt",
--- >       "author": "Matthias Metzger, Alex Biehl",
--- >       "category": "Web",
--- >       "dependencies": ["text", "aeson", "hayoo-core"],
--- >       "maintainer": "Matthias Metzger",
--- >       "name": "hayoo-indexer",
--- >       "synopsis": "",
--- >       "version": "0.1.0.0"
+-- >       "description": "An efficient ...",
+-- >       "package": "aeson",
+-- >       "module": "Data.Aeson",
+-- >       "name": "decode",
+-- >       "type": "function",
+-- >       "source": "",
 -- >     },
 -- >     "index": {
--- >       "type": "package",
+-- >       "package": "aeson",
 -- >       "indexed": "2017-01-01T10:00:00",
--- >       "description": "An indexer, which turns hoogle and cabal files into hunt",
--- >       "author": "Matthias Metzger, Alex Biehl",
--- >       "category": "Web",
--- >       "dependencies": "text aeson hayoo-core",
--- >       "name": "hayoo-indexer"
+-- >       "description": "An efficient ...",
+-- >       "module": "Data.Aeson",
+-- >       "name": "decode",
+-- >       "type": "function",
+-- >       "hierarchy": "Data Aeson",
+-- >       "signature": "(FromJSON a) => ByteString -> Maybe a",
+-- >       "subsig": ""
 -- >     }
 -- >   }
 -- > }
 insert :: Time.UTCTime -> DeclInfo.DeclInfo -> Json.Value
 insert now info =
   let
-    declInfoDescription =
+    declDescription =
       info
         |> DeclInfo.description
         |> fmap (\value -> [ ("description" :: T.Text) .= value ])
@@ -79,22 +80,22 @@ insert now info =
           ]
 
     description =
-      Json.object
-        ([ "indexed" .= I.fmtTime "%c" now
-         , "package" .= DeclInfo.package info
-         , "module"  .= DeclInfo.moduleName info
-         , "type"    .= type_
-         , "source"  .= Maybe.fromMaybe "" (DeclInfo.sourceURI info)
-         ] ++ declInfoDescription)
+      Json.object $
+        [ "indexed" .= I.fmtTime "%c" now
+        , "package" .= DeclInfo.package info
+        , "module"  .= DeclInfo.moduleName info
+        , "type"    .= type_
+        , "source"  .= Maybe.fromMaybe "" (DeclInfo.sourceURI info)
+        ] <> declDescription
 
     index =
-      Json.object
-        ([ "package"   .= (DeclInfo.package info)
-         , "module"    .= (DeclInfo.moduleName info)
-         , "name"      .= (DeclInfo.name info)
-         , "type"      .= type_
-         , "hierarchy" .= T.replace "." " " (DeclInfo.moduleName info)
-         ] ++ declInfoDescription ++ signature)
+      Json.object $
+        [ "package"   .= (DeclInfo.package info)
+        , "module"    .= (DeclInfo.moduleName info)
+        , "name"      .= (DeclInfo.name info)
+        , "type"      .= type_
+        , "hierarchy" .= T.replace "." " " (DeclInfo.moduleName info)
+        ] <> declDescription <> signature
 
     document =
       Json.object
