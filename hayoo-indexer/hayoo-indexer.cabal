@@ -1,7 +1,7 @@
 name:                hayoo-indexer
 version:             0.1.0.0
 -- synopsis:
--- description:
+description:         An indexer, which turns hoogle and cabal files into hunt compatible indexing
 homepage:            https://github.com/githubuser/hayoo-indexer#readme
 license:             BSD3
 license-file:        LICENSE
@@ -19,10 +19,12 @@ library
                      , Hayoo.Indexer.Hoogle.Parse
                      , Hayoo.Indexer.Cabal.Parse
   build-depends:       base >= 4.7 && < 5
+                     , aeson
                      , Cabal
                      , hayoo-core
                      , megaparsec
                      , text
+                     , time
   default-language:    Haskell2010
 
 test-suite hayoo-indexer-test
