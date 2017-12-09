@@ -12,6 +12,7 @@ import qualified Distribution.PackageDescription       as C
 import qualified Distribution.PackageDescription.Parse as Cabal
 import qualified Distribution.Version                  as C
 import           Hayoo.Core.PackageInfo                (PackageInfo (..))
+import           Hayoo.Indexer.Internal                ((|>))
 
 
 
@@ -116,12 +117,3 @@ parseErrorPretty err =
 
     Cabal.FromString str maybeLine ->
       undefined
-
-
-
--- HELPERS
-
-
-(|>) :: a -> (a -> b) -> b
-(|>) a f =
-  f a

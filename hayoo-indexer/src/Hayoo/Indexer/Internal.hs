@@ -2,6 +2,7 @@
 module Hayoo.Indexer.Internal
   ( fullWord
   , fmtTime
+  , (|>)
   ) where
 
 
@@ -30,3 +31,12 @@ fullWord word =
 fmtTime :: String -> Time.UTCTime -> String
 fmtTime format =
   Time.formatTime Time.defaultTimeLocale format
+
+
+
+-- HELPERS
+
+
+(|>) :: a -> (a -> b) -> b
+(|>) a f =
+  f a
