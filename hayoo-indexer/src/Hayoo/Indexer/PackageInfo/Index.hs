@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.Indexer.Cabal.Index
+module Hayoo.Indexer.PackageInfo.Index
   ( insert
   , delete
   ) where

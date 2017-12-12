@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.Indexer.Hoogle.Index
+module Hayoo.Indexer.DeclInfo.Index
   ( insert
   , delete
   ) where

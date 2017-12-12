@@ -1,12 +1,12 @@
 module Main where
 
 
-import           Data.Monoid                ((<>))
-import qualified Data.Text                  as T
-import qualified Data.Text.IO               as T
-import qualified Hayoo.Indexer.Hoogle.Parse as Hoogle
+import           Data.Monoid                   ((<>))
+import qualified Data.Text                     as T
+import qualified Data.Text.IO                  as T
+import qualified Hayoo.Indexer.DeclInfo.Hoogle as Hoogle
 import           Options.Applicative
-import qualified Text.Megaparsec.Error      as M
+import qualified Text.Megaparsec.Error         as M
 
 
 

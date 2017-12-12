@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.Indexer.Hoogle.Parse
+module Hayoo.Indexer.DeclInfo.Hoogle
   ( Package (..)
   , parse
 

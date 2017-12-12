@@ -16,14 +16,16 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Hayoo.Indexer
-                     , Hayoo.Indexer.Hoogle.Parse
-                     , Hayoo.Indexer.Hoogle.Index
-                     , Hayoo.Indexer.Cabal.Parse
-                     , Hayoo.Indexer.Cabal.Index
+                     , Hayoo.Indexer.DeclInfo.Hoogle
+                     , Hayoo.Indexer.DeclInfo.Index
+                     , Hayoo.Indexer.PackageInfo.Cabal
+                     , Hayoo.Indexer.PackageInfo.Index
                      , Hayoo.Indexer.Internal
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , Cabal
+                     , conduit
+                     , tar-conduit
                      , hayoo-core
                      , megaparsec
                      , text

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Hayoo.Indexer.Cabal.Parse
+module Hayoo.Indexer.PackageInfo.Cabal
   ( parse
   , parseErrorPretty
   ) where
