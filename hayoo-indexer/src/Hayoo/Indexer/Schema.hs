@@ -103,13 +103,13 @@ dateRegex =
       mconcat [ year, "(", ms, d2, "(", ms, d2 , "(T", d2, ":", d2, ":", d2, ")?)?)?" ]
 
 
-anyLetter :: Hunt.RegEx
-anyLetter =
+anyZeroOrMany :: Hunt.RegEx
+anyZeroOrMany =
   ".*"
 
 
-anyExceptSpace :: Hunt.RegEx
-anyExceptSpace =
+exceptSpaceZeroOrMany :: Hunt.RegEx
+exceptSpaceZeroOrMany =
   "[^ ]*"
 
 
@@ -118,6 +118,36 @@ wordSchema =
   Hunt.mkSchema
     |> Hunt.setCxRegEx "\\w*"
     |> Hunt.setCxWeight 1.0
+
+
+
+-- SIMPLIFIED HUNT API
+--
+-- Admittedly, this is not really necessary and
+-- only adds some aliases for functions imported
+-- from the Hunt.ClientInterface. However, those
+-- functions are annoyingly hard to type and obscure
+-- the essence of their functionality.
+
+
+regex :: Hunt.RegEx -> Hunt.ContextSchema -> Hunt.ContextSchema
+regex =
+  Hunt.setCxRegEx
+
+
+weight :: Float -> Hunt.ContextSchema -> Hunt.ContextSchema
+weight =
+  Hunt.setCxWeight
+
+
+noDefault :: Hunt.ContextSchema -> Hunt.ContextSchema
+noDefault =
+  Hunt.setCxNoDefault
+
+
+date :: Hunt.ContextSchema -> Hunt.ContextSchema
+date =
+  Hunt.setCxDate
 
 
 
@@ -132,101 +162,101 @@ contexts =
 
   , ( "category"
     , wordSchema
-        |> Hunt.setCxNoDefault
+        |> noDefault
     )
 
   , ( "dependencies"
     , wordSchema
-        |> Hunt.setCxRegEx anyExceptSpace
-        |> Hunt.setCxNoDefault
+        |> regex exceptSpaceZeroOrMany
+        |> noDefault
     )
 
   , ( "description"
     , wordSchema
-        |> Hunt.setCxWeight 0.3
+        |> weight 0.3
     )
 
   , ( "hierarchy"
     , wordSchema
-        |> Hunt.setCxWeight 0.1
+        |> weight 0.1
     )
 
   , ( "indexed"
     , wordSchema
-        |> Hunt.setCxRegEx dateRegex
-        |> Hunt.setCxNoDefault
-        |> Hunt.setCxDate
+        |> regex dateRegex
+        |> noDefault
+        |> date
     )
 
   , ( "maintainer"
     , wordSchema
-        |> Hunt.setCxNoDefault
+        |> noDefault
     )
 
   , ( "module"
     , wordSchema
-        |> Hunt.setCxWeight 0.5
-        |> Hunt.setCxRegEx anyLetter
+        |> weight 0.5
+        |> regex anyZeroOrMany
     )
 
   , ( "name"
     , wordSchema
-        |> Hunt.setCxWeight 3.0
-        |> Hunt.setCxRegEx anyLetter
+        |> weight 3.0
+        |> regex anyZeroOrMany
     )
 
   , ( "package"
     , wordSchema
-        |> Hunt.setCxRegEx anyLetter
+        |> regex anyZeroOrMany
     )
 
   , ( "partial"
     , wordSchema
-        |> Hunt.setCxWeight 0.2
-        |> Hunt.setCxRegEx anyExceptSpace
+        |> weight 0.2
+        |> regex exceptSpaceZeroOrMany
     )
 
   , ( "source"
     , wordSchema
-        |> Hunt.setCxWeight 0.1
-        |> Hunt.setCxRegEx anyLetter
-        |> Hunt.setCxNoDefault
+        |> weight 0.1
+        |> regex anyZeroOrMany
+        |> noDefault
     )
 
   , ( "synopsis"
     , wordSchema
-        |> Hunt.setCxWeight 0.8
+        |> weight 0.8
     )
 
   , ( "type"
     , wordSchema
-        |> Hunt.setCxWeight 0.0
-        |> Hunt.setCxNoDefault
+        |> weight 0.0
+        |> noDefault
     )
 
   , ( "upload"
     , wordSchema
-        |> Hunt.setCxRegEx dateRegex
-        |> Hunt.setCxNoDefault
-        |> Hunt.setCxDate
+        |> regex dateRegex
+        |> noDefault
+        |> date
     )
 
   , ( "version"
     , wordSchema
-        |> Hunt.setCxRegEx anyLetter
-        |> Hunt.setCxNoDefault
+        |> regex anyZeroOrMany
+        |> noDefault
     )
 
   , ( "signature"
     , wordSchema
-        |> Hunt.setCxRegEx "[^$\n]*"
-        |> Hunt.setCxNoDefault
+        |> regex "[^$\n]*"
+        |> noDefault
     )
 
   , ( "subsig"
     , wordSchema
-        |> Hunt.setCxWeight 1.5        -- signature weight * 0.5
-        |> Hunt.setCxRegEx "[^$\n]*"
-        |> Hunt.setCxNoDefault
+        |> weight 1.5        -- signature weight * 0.5
+        |> regex "[^$\n]*"
+        |> noDefault
     )
   ]
