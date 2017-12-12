@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Hayoo.Indexer
+                     , Hayoo.Indexer.Schema
                      , Hayoo.Indexer.DeclInfo.Hoogle
                      , Hayoo.Indexer.DeclInfo.Index
                      , Hayoo.Indexer.PackageInfo.Cabal
@@ -25,6 +26,7 @@ library
                      , aeson
                      , Cabal
                      , conduit
+                     , hunt-searchengine
                      , tar-conduit
                      , hayoo-core
                      , megaparsec
