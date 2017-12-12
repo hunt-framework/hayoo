@@ -6,7 +6,7 @@ module Hayoo.Indexer.Schema
 
 
 import qualified Data.Aeson             as Json
-import qualified Data.Text              as T
+import qualified Data.String            as String
 import           Hayoo.Indexer.Internal ((|>))
 import qualified Hunt.ClientInterface   as Hunt
 
@@ -15,6 +15,44 @@ import qualified Hunt.ClientInterface   as Hunt
 -- SCHEMA FOR HAYOO DATA
 
 
+-- | Create a @Value@, describing all contexts and
+-- their schemas, necessary for Hayoo!
+--
+-- The following contexts will be created:
+--
+--    * author
+--    * category
+--    * dependencies
+--    * description
+--    * hierarchy
+--    * homepage
+--    * indexed
+--    * maintainer
+--    * module
+--    * name
+--    * package
+--    * partial
+--    * signature
+--    * source
+--    * subsig
+--    * synopsis
+--    * type
+--    * upload
+--    * version
+--
+-- Here is an example of the resulting JSON:
+--
+-- > [
+-- >   {
+-- >     "cmd": "insert-context",
+-- >     "context": "author",
+-- >     "schema": {
+-- >       "regexp": "\\w*",
+-- >       "type": "text",
+-- >     }
+-- >   },
+-- >   ...
+-- > ]
 insert :: Json.Value
 insert =
   contexts
@@ -23,6 +61,20 @@ insert =
     |> Json.toJSON
 
 
+-- | Create a @Value@ describing the removal of all
+-- contexts from Hunt.
+--
+-- All contexts documented in @insert@ will be removed.
+--
+-- Here is an example of the resulting JSON:
+--
+-- > [
+-- >   {
+-- >     "cmd": "delete-context",
+-- >     "context": "author"
+-- >   },
+-- >   ...
+-- > ]
 delete :: Json.Value
 delete =
   contexts
@@ -47,7 +99,8 @@ dateRegex =
     ms =
       "-"
   in
-    mconcat [ year, "(", ms, d2, "(", ms, d2 , "(T", d2, ":", d2, ":", d2, ")?)?)?" ]
+    String.fromString $
+      mconcat [ year, "(", ms, d2, "(", ms, d2 , "(T", d2, ":", d2, ":", d2, ")?)?)?" ]
 
 
 anyLetter :: Hunt.RegEx
