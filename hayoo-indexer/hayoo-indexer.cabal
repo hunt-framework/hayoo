@@ -23,15 +23,19 @@ library
                      , Hayoo.Indexer.PackageInfo.Index
                      , Hayoo.Indexer.Internal
   build-depends:       base >= 4.7 && < 5
+                     , bytestring
                      , aeson
+                     , aeson-pretty
                      , Cabal
                      , conduit
+                     , directory
                      , hunt-searchengine
                      , tar-conduit
                      , hayoo-core
                      , megaparsec
                      , text
                      , time
+                     , vector
   default-language:    Haskell2010
 
 test-suite hayoo-indexer-test

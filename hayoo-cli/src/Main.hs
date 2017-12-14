@@ -1,22 +1,10 @@
 module Main where
 
 
-import qualified Control.Monad                 as Monad
-import qualified Data.Aeson                    as Json
-import qualified Data.Aeson.Encode.Pretty      as Json
-import qualified Data.ByteString.Lazy.Char8    as BS
-import           Data.Monoid                   ((<>))
-import qualified Data.Text                     as T
-import qualified Data.Text.IO                  as T
-import qualified Data.Time                     as Time
-import qualified Data.Vector                   as Vector
-import qualified Hayoo.Core.DeclInfo           as DeclInfo
-import qualified Hayoo.Indexer.DeclInfo.Hoogle as Hoogle
-import qualified Hayoo.Indexer.DeclInfo.Index  as DeclInfo
-import qualified Hayoo.Indexer.Schema          as Schema
+import qualified Control.Monad       as Monad
+import           Data.Monoid         ((<>))
+import qualified Hayoo.Indexer       as Indexer
 import           Options.Applicative
-import qualified System.Directory              as Directory
-import qualified Text.Megaparsec.Error         as M
 
 
 
@@ -59,23 +47,9 @@ run :: Command -> IO ()
 run c =
   case c of
     Index (HoogleFile filePath withSchema outputDir) -> do
-      content <- T.readFile filePath
-      let result = Hoogle.parse content
-      case result of
-        Right (pkg, infos) -> do
-          Directory.createDirectoryIfMissing True outputDir
-
-          Monad.when withSchema $ do
-            BS.writeFile "schema.json" (Json.encodePretty Schema.insert)
-
-          now <- Time.getCurrentTime
-          let jsonInfos = map (DeclInfo.insert now) infos
-          BS.writeFile
-            (T.unpack (Hoogle._name pkg) ++ ".json")
-            (Json.encodePretty (Json.Array (Vector.fromList jsonInfos)))
-
-        Left err ->
-          putStrLn (M.parseErrorPretty' content err)
+      Monad.void $
+          Indexer.run $
+            Indexer.Config outputDir (Indexer.HoogleFile filePath withSchema)
 
     Server ->
       putStrLn "this is not implemented yet"

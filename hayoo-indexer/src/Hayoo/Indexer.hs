@@ -2,11 +2,23 @@ module Hayoo.Indexer
   ( Config (..)
   , Mode (..)
   , Statistics (..)
-  , index
+  , run
   ) where
 
 
-import           Servant.Client (BaseUrl)
+import qualified Control.Monad                 as Monad
+import qualified Data.Aeson                    as Json
+import qualified Data.Aeson.Encode.Pretty      as Json
+import qualified Data.ByteString.Lazy.Char8    as LBS
+import qualified Data.Text                     as T
+import qualified Data.Text.IO                  as T
+import qualified Data.Time                     as Time
+import qualified Data.Vector                   as Vector
+import qualified Hayoo.Indexer.DeclInfo.Hoogle as Hoogle
+import qualified Hayoo.Indexer.DeclInfo.Index  as DeclInfo
+import qualified Hayoo.Indexer.Schema          as Schema
+import qualified System.Directory              as Directory
+import qualified Text.Megaparsec               as M
 
 
 
@@ -16,8 +28,8 @@ import           Servant.Client (BaseUrl)
 -- |
 data Config
   = Config
-    { outputDirectory :: FilePath
-    , mode            :: Mode
+    { _outputDirectory :: FilePath
+    , _mode            :: Mode
     } deriving (Show)
 
 
@@ -37,12 +49,12 @@ data Config
 -- Both, Automatic and Manual indexing may take some time.
 data Mode
   = HoogleFile
-    { hoogleFile :: FilePath
-    , withSchema :: Bool
+    { _hoogleFile :: FilePath
+    , _withSchema :: Bool
     }
   | CabalFile
-    { cabalFile  :: FilePath
-    , withSchema :: Bool
+    { _cabalFile  :: FilePath
+    , _withSchema :: Bool
     }
   | Automatic
   | Manual
@@ -61,6 +73,34 @@ data Statistics
 
 -- | @index@ hoogle and cabal files for @pump@ing them into
 -- the hunt searchengine.
-index :: Config -> IO Statistics
-index config =
-  undefined
+run :: Config -> IO Statistics
+run config =
+  case _mode config of
+    HoogleFile filePath schema -> do
+      hoogleFile filePath schema (_outputDirectory config)
+      pure Statistics
+
+    _ -> do
+      putStrLn "Sorry, this is not supported yet."
+      pure Statistics
+
+
+hoogleFile :: FilePath -> Bool -> FilePath -> IO ()
+hoogleFile hoogleFilePath schema outputDirectory = do
+  content <- T.readFile hoogleFilePath
+  let result = Hoogle.parse content
+  case result of
+    Left err -> do
+      putStrLn (M.parseErrorPretty' content err)
+
+    Right (pkg, infos) -> do
+      Directory.createDirectoryIfMissing True outputDirectory
+
+      Monad.when schema $ do
+        LBS.writeFile "schema.json" (Json.encodePretty Schema.insert)
+
+      now <- Time.getCurrentTime
+      let jsonInfos = map (DeclInfo.insert now) infos
+      LBS.writeFile
+        (T.unpack (Hoogle._name pkg) ++ ".json")
+        (Json.encodePretty (Json.Array (Vector.fromList jsonInfos)))
