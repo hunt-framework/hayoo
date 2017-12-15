@@ -28,13 +28,18 @@ library
                      , aeson-pretty
                      , Cabal
                      , conduit
+                     , conduit-combinators
+                     , conduit-extra
+                     , filepath
                      , directory
                      , hunt-searchengine
                      , tar-conduit
                      , hayoo-core
                      , megaparsec
+                     , resourcet
                      , text
                      , time
+                     , transformers
                      , vector
   default-language:    Haskell2010
 

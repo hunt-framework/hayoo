@@ -27,16 +27,8 @@ main = execParser opts >>= run
 
 
 data Command
-  = Index IndexCommand
+  = Index Indexer.Config
   | Server
-
-
-data IndexCommand
-  = HoogleFile
-    { _file       :: FilePath
-    , _withSchema :: Bool
-    , _ouputDir   :: FilePath
-    } deriving (Show)
 
 
 
@@ -46,10 +38,8 @@ data IndexCommand
 run :: Command -> IO ()
 run c =
   case c of
-    Index (HoogleFile filePath withSchema outputDir) -> do
-      Monad.void $
-          Indexer.run $
-            Indexer.Config outputDir (Indexer.HoogleFile filePath withSchema)
+    Index config -> do
+      Monad.void (Indexer.run config)
 
     Server ->
       putStrLn "this is not implemented yet"
@@ -68,8 +58,45 @@ cmd =
 
 
 indexOpts :: Parser Command
-indexOpts =
-  Index <$> (HoogleFile <$> filePath <*> withSchema <*> outputDir)
+indexOpts = Index <$> subparser
+  ( command "manual" ( info manualOpts ( progDesc "Indexing the whole of Hoogle manually." ) )
+  <> command "hoogle-file" ( info hoogleFileOpts ( progDesc "Indexing a single hoogle file." ) )
+  )
+
+
+outputDir :: Parser FilePath
+outputDir =
+  strOption
+    ( long "output-directory"
+    <> short 'o'
+    <> help "Directory with the resulting files"
+    )
+
+
+manualOpts :: Parser Indexer.Config
+manualOpts =
+  Indexer.Config <$> outputDir
+                 <*> (Indexer.Manual <$> hoogleArchive <*> cabalArchive)
+  where
+    hoogleArchive =
+      strOption
+        ( long "hoogle-archive"
+        <> short 'h'
+        <> help "Path to the hoogle tar archive to be indexed"
+        )
+
+    cabalArchive =
+      strOption
+        ( long "cabal-archive"
+        <> short 'c'
+        <> help "Path to the hoogle tar archive to be indexed"
+        )
+
+
+hoogleFileOpts :: Parser Indexer.Config
+hoogleFileOpts =
+  Indexer.Config <$> outputDir
+                 <*> (Indexer.HoogleFile <$> filePath <*> withSchema)
   where
     filePath =
       strOption
@@ -84,12 +111,7 @@ indexOpts =
         <> help "Should the schema be printed as well?"
         ) <|> pure False
 
-    outputDir =
-      strOption
-        ( long "output"
-        <> short 'o'
-        <> help "Directory with the resulting files"
-        )
+
 
 
 serverOpts :: Parser Command
