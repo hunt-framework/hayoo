@@ -154,13 +154,13 @@ handleFile :: Monad.MonadIO m
            -> Conduit.Header
            -> Conduit.Conduit BS.ByteString m Statistics
 handleFile outputDir header =
-  decodeUtf8
+  keepCompleteFiles header
     -- For some time now, all documentation on hackage should
     -- be utf8 encoded. However, there are packages like FieldTrip,
     -- for which this is not true. Since they are very old, we
     -- can safely ignore them here.
+    .| decodeUtf8
     .| ignoreError
-    .| keepFiles header
     .| parseHoogle
     .| handleParseResult outputDir
 
@@ -208,21 +208,30 @@ handleParseResult output =
 -- HELPERS
 
 
-keepFiles :: Monad m => Conduit.Header -> Conduit.Conduit o m (FilePath, o)
-keepFiles header =
+keepCompleteFiles :: (Monoid o, Monad m) => Conduit.Header -> Conduit.Conduit o m (FilePath, o)
+keepCompleteFiles header =
   case Conduit.headerFileType header of
     Conduit.FTNormal ->
-      Conduit.awaitForever $ \content ->
-        Conduit.yield (Conduit.headerFilePath header, content)
+      let
+        drain chunks = do
+          maybeNextChunk <- Conduit.await
+          case maybeNextChunk of
+            Nothing ->
+              Conduit.yield (Conduit.headerFilePath header, mconcat (reverse chunks))
+
+            Just nextChunk ->
+              drain (nextChunk:chunks)
+      in
+        drain mempty
 
     _ ->
       pure ()
 
 
-decodeUtf8 :: Monad m => Conduit.Conduit BS.ByteString m (Either T.UnicodeException T.Text)
+decodeUtf8 :: Monad m => Conduit.Conduit (FilePath, BS.ByteString) m (Either T.UnicodeException (FilePath, T.Text))
 decodeUtf8 =
-  Conduit.awaitForever $ \content ->
-    Conduit.yield (T.decodeUtf8' content)
+  Conduit.awaitForever $ \(filePath, content) ->
+    Conduit.yield ((,) <$> pure filePath <*> T.decodeUtf8' content)
 
 
 ignoreError :: Monad m => Conduit.Conduit (Either e a) m a
