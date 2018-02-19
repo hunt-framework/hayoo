@@ -6,8 +6,9 @@ module Hayoo.Server
 
     -- * Server Configuration
   , Hayoo.Config (..)
+  , Hayoo.ServerConfig (..)
+  , Hayoo.HuntConfig (..)
   , Hayoo.defaultConfig
-  , Hayoo.readTomlFile
   ) where
 
 

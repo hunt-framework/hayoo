@@ -17,6 +17,9 @@ executable hayoo
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
+  other-modules:       Hayoo.CLI
+                     , Hayoo.CLI.Indexer
+                     , Hayoo.CLI.Server
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , aeson-pretty
@@ -26,6 +29,8 @@ executable hayoo
                      , hayoo-indexer
                      , megaparsec
                      , directory
+                     , hayoo-server
+                     , servant-client
                      , text
                      , time
                      , vector

@@ -7,6 +7,7 @@ module Hayoo.CLI
 
 import           Data.Monoid         ((<>))
 import qualified Hayoo.CLI.Indexer   as Indexer
+import qualified Hayoo.CLI.Server    as Server
 import           Options.Applicative
 
 
@@ -16,7 +17,7 @@ import           Options.Applicative
 
 data Command
   = Indexer Indexer.Command
-  | Server
+  | Server Server.Command
 
 
 
@@ -36,7 +37,7 @@ combined :: Parser Command
 combined =
   subparser
     ( command "indexer" (Indexer <$> info (Indexer.parser <**> helper) (progDesc "Interact with the indexer"))
-    <> command "server" (info (pure Server <**> helper) (progDesc "Start and control the Hayoo! server"))
+    <> command "server" (Server <$> info (Server.parser <**> helper) (progDesc "Start and control the Hayoo! server"))
     )
 
 
@@ -50,5 +51,5 @@ run cmd =
     Indexer subCmd ->
       Indexer.run subCmd
 
-    Server ->
-      putStrLn "this is not implemented yet"
+    Server subCmd ->
+      Server.run subCmd
